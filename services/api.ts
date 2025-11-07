@@ -203,7 +203,7 @@ export class API {
   async getDoubanData(
     type: "movie" | "tv",
     tag: string,
-    pageSize: number = 32,
+    pageSize: number = 16,
     pageStart: number = 0
   ): Promise<DoubanResponse> {
     const url = `/api/douban?type=${type}&tag=${encodeURIComponent(tag)}&pageSize=${pageSize}&pageStart=${pageStart}`;
