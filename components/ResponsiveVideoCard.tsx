@@ -66,17 +66,17 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
         return;
       }
       // 如果有播放进度，直接转到播放页面
-      // if (progress !== undefined && episodeIndex !== undefined) {
-      //   router.push({
-      //     pathname: "/play",
-      //     params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
-      //   });
-      // } else {
-      router.push({
-        pathname: "/detail",
-        params: { source, q: title },
-      });
-      // }
+      if (progress !== undefined && episodeIndex !== undefined) {
+        router.push({
+          pathname: "/play",
+          params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
+        });
+      } else {
+        router.push({
+          pathname: "/detail",
+          params: { source, q: title },
+        });
+      }
     };
 
     const handleFocus = useCallback(() => {

@@ -6,10 +6,10 @@ import { PlayRecordManager } from "@/services/storage";
 import { API } from "@/services/api";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
-import Logger from '@/utils/Logger';
+import Logger from "@/utils/Logger";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 
-const logger = Logger.withTag('VideoCardTV');
+const logger = Logger.withTag("VideoCardTV");
 
 interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   id: string;
@@ -26,6 +26,7 @@ interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   onFocus?: () => void;
   onRecordDeleted?: () => void; // 添加回调属性
   api: API;
+  isFromRecord?: boolean; // 是否来自最近播放
 }
 
 const VideoCard = forwardRef<View, VideoCardProps>(
@@ -43,6 +44,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       onFocus,
       onRecordDeleted,
       api,
+      isFromRecord = false,
       playTime = 0,
     }: VideoCardProps,
     ref
@@ -66,8 +68,8 @@ const VideoCard = forwardRef<View, VideoCardProps>(
         longPressTriggered.current = false;
         return;
       }
-      // 如果有播放进度，直接转到播放页面
-      if (progress !== undefined && episodeIndex !== undefined) {
+      // 如果是最近播放且有播放进度，直接转到播放页面
+      if (isFromRecord && progress !== undefined && episodeIndex !== undefined) {
         router.push({
           pathname: "/play",
           params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
@@ -151,7 +153,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
     return (
       <Animated.View style={[styles.wrapper, animatedStyle, { opacity: fadeAnim }]}>
         <Pressable
-          android_ripple={Platform.isTV || deviceType !== 'tv' ? { color: 'transparent' } : { color: Colors.dark.link }}
+          android_ripple={Platform.isTV || deviceType !== "tv" ? { color: "transparent" } : { color: Colors.dark.link }}
           onPress={handlePress}
           onLongPress={handleLongPress}
           onFocus={handleFocus}
@@ -232,7 +234,7 @@ const styles = StyleSheet.create({
   pressable: {
     width: CARD_WIDTH + 20,
     height: CARD_HEIGHT + 60,
-    justifyContent: 'center',
+    justifyContent: "center",
     alignItems: "center",
     overflow: "visible",
   },

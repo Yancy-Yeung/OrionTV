@@ -126,7 +126,7 @@ export class API {
     const response = await this._fetch("/api/logout", {
       method: "POST",
     });
-    await AsyncStorage.setItem("authCookies", '');
+    await AsyncStorage.setItem("authCookies", "");
     return response.json();
   }
 
@@ -203,7 +203,7 @@ export class API {
   async getDoubanData(
     type: "movie" | "tv",
     tag: string,
-    pageSize: number = 16,
+    pageSize: number = 32,
     pageStart: number = 0
   ): Promise<DoubanResponse> {
     const url = `/api/douban?type=${type}&tag=${encodeURIComponent(tag)}&pageSize=${pageSize}&pageStart=${pageStart}`;
@@ -221,7 +221,7 @@ export class API {
     const url = `/api/search/one?q=${encodeURIComponent(query)}&resourceId=${encodeURIComponent(resourceId)}`;
     const response = await this._fetch(url, { signal });
     const { results } = await response.json();
-    return { results: results.filter((item: any) => item.title === query )};
+    return { results: results.filter((item: any) => item.title === query) };
   }
 
   async getResources(signal?: AbortSignal): Promise<ApiSite[]> {

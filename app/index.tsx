@@ -196,6 +196,7 @@ export default function HomeScreen() {
       sourceName={item.sourceName}
       totalEpisodes={item.totalEpisodes}
       api={api}
+      isFromRecord={selectedCategory?.type === "record"}
       onRecordDeleted={fetchInitialData}
     />
   );
