@@ -1,5 +1,16 @@
 import React, { useEffect, useCallback, useRef, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Animated,
+  StatusBar,
+  Platform,
+  BackHandler,
+  ToastAndroid,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -47,44 +58,47 @@ export default function HomeScreen() {
   const { isLoggedIn, logout } = useAuthStore();
   const apiConfigStatus = useApiConfig();
 
+  // 当从其他页面返回首页且当前是"最近播放"分类时，刷新播放记录
   useFocusEffect(
     useCallback(() => {
-      refreshPlayRecords();
-    }, [refreshPlayRecords])
+      if (selectedCategory?.type === "record") {
+        refreshPlayRecords();
+      }
+    }, [selectedCategory, refreshPlayRecords])
   );
 
-    // 双击返回退出逻辑（只限当前页面）
+  // 双击返回退出逻辑（只限当前页面）
   const backPressTimeRef = useRef<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-    const handleBackPress = () => {
-      const now = Date.now();
+      const handleBackPress = () => {
+        const now = Date.now();
 
-      // 如果还没按过返回键，或距离上次超过2秒
-      if (!backPressTimeRef.current || now - backPressTimeRef.current > 2000) {
-        backPressTimeRef.current = now;
-        ToastAndroid.show("再按一次返回键退出", ToastAndroid.SHORT);
-        return true; // 拦截返回事件，不退出
-      }
+        // 如果还没按过返回键，或距离上次超过2秒
+        if (!backPressTimeRef.current || now - backPressTimeRef.current > 2000) {
+          backPressTimeRef.current = now;
+          ToastAndroid.show("再按一次返回键退出", ToastAndroid.SHORT);
+          return true; // 拦截返回事件，不退出
+        }
 
-      // 两次返回键间隔小于2秒，退出应用
-      BackHandler.exitApp();
-      return true;
-    };
-
-    // 仅限 Android 平台启用此功能
-    if (Platform.OS === "android") {
-      const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
-
-      // 返回首页时重置状态
-      return () => {
-        backHandler.remove();
-        backPressTimeRef.current = null;
+        // 两次返回键间隔小于2秒，退出应用
+        BackHandler.exitApp();
+        return true;
       };
-    }
-  }, [])
-);
+
+      // 仅限 Android 平台启用此功能
+      if (Platform.OS === "android") {
+        const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
+
+        // 返回首页时重置状态
+        return () => {
+          backHandler.remove();
+          backPressTimeRef.current = null;
+        };
+      }
+    }, [])
+  );
 
   // 统一的数据获取逻辑
   useEffect(() => {
@@ -140,6 +154,11 @@ export default function HomeScreen() {
   const handleCategorySelect = (category: Category) => {
     setSelectedTag(null);
     selectCategory(category);
+
+    // 只在切换到"最近播放"分类时刷新播放记录
+    if (category.type === "record") {
+      refreshPlayRecords();
+    }
   };
 
   const handleTagSelect = (tag: string) => {
@@ -200,7 +219,13 @@ export default function HomeScreen() {
       <View style={dynamicStyles.headerContainer}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <ThemedText style={dynamicStyles.headerTitle}>首页</ThemedText>
-          <Pressable android_ripple={Platform.isTV || deviceType !== 'tv'? { color: 'transparent' } : { color: Colors.dark.link }} style={{ marginLeft: 20 }} onPress={() => router.push("/live")}>
+          <Pressable
+            android_ripple={
+              Platform.isTV || deviceType !== "tv" ? { color: "transparent" } : { color: Colors.dark.link }
+            }
+            style={{ marginLeft: 20 }}
+            onPress={() => router.push("/live")}
+          >
             {({ focused }) => (
               <ThemedText style={[dynamicStyles.headerTitle, { color: focused ? "white" : "grey" }]}>直播</ThemedText>
             )}

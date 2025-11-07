@@ -8,9 +8,9 @@ import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { DeviceUtils } from "@/utils/DeviceUtils";
-import Logger from '@/utils/Logger';
+import Logger from "@/utils/Logger";
 
-const logger = Logger.withTag('ResponsiveVideoCard');
+const logger = Logger.withTag("ResponsiveVideoCard");
 
 interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   id: string;
@@ -66,22 +66,22 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
         return;
       }
       // 如果有播放进度，直接转到播放页面
-      if (progress !== undefined && episodeIndex !== undefined) {
-        router.push({
-          pathname: "/play",
-          params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
-        });
-      } else {
-        router.push({
-          pathname: "/detail",
-          params: { source, q: title },
-        });
-      }
+      // if (progress !== undefined && episodeIndex !== undefined) {
+      //   router.push({
+      //     pathname: "/play",
+      //     params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
+      //   });
+      // } else {
+      router.push({
+        pathname: "/detail",
+        params: { source, q: title },
+      });
+      // }
     };
 
     const handleFocus = useCallback(() => {
       // Only apply focus scaling for TV devices
-      if (responsiveConfig.deviceType === 'tv') {
+      if (responsiveConfig.deviceType === "tv") {
         setIsFocused(true);
         Animated.spring(scale, {
           toValue: 1.05,
@@ -94,7 +94,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
     }, [scale, onFocus, responsiveConfig.deviceType]);
 
     const handleBlur = useCallback(() => {
-      if (responsiveConfig.deviceType === 'tv') {
+      if (responsiveConfig.deviceType === "tv") {
         setIsFocused(false);
         Animated.spring(scale, {
           toValue: 1.0,
@@ -163,7 +163,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
       card: {
         width: cardWidth,
         height: cardHeight,
-        borderRadius: responsiveConfig.deviceType === 'mobile' ? 8 : responsiveConfig.deviceType === 'tablet' ? 10 : 8,
+        borderRadius: responsiveConfig.deviceType === "mobile" ? 8 : responsiveConfig.deviceType === "tablet" ? 10 : 8,
         backgroundColor: "#222",
         overflow: "hidden",
       },
@@ -178,8 +178,8 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
         ...StyleSheet.absoluteFillObject,
         backgroundColor: "rgba(0,0,0,0.3)",
         borderColor: Colors.dark.primary,
-        borderWidth: responsiveConfig.deviceType === 'tv' ? 2 : 0,
-        borderRadius: responsiveConfig.deviceType === 'mobile' ? 8 : responsiveConfig.deviceType === 'tablet' ? 10 : 8,
+        borderWidth: responsiveConfig.deviceType === "tv" ? 2 : 0,
+        borderRadius: responsiveConfig.deviceType === "mobile" ? 8 : responsiveConfig.deviceType === "tablet" ? 10 : 8,
         justifyContent: "center",
         alignItems: "center",
       },
@@ -187,14 +187,14 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: Colors.dark.primary,
-        paddingHorizontal: responsiveConfig.deviceType === 'mobile' ? 8 : 10,
-        paddingVertical: responsiveConfig.deviceType === 'mobile' ? 4 : 5,
+        paddingHorizontal: responsiveConfig.deviceType === "mobile" ? 8 : 10,
+        paddingVertical: responsiveConfig.deviceType === "mobile" ? 4 : 5,
         borderRadius: 5,
       },
       continueWatchingText: {
         color: "white",
         marginLeft: 5,
-        fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12,
+        fontSize: responsiveConfig.deviceType === "mobile" ? 10 : 12,
         fontWeight: "bold",
       },
     });
@@ -207,16 +207,16 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
           onFocus={handleFocus}
           onBlur={handleBlur}
           style={styles.pressable}
-          activeOpacity={responsiveConfig.deviceType === 'tv' ? 1 : 0.8}
-          delayLongPress={responsiveConfig.deviceType === 'mobile' ? 500 : 1000}
+          activeOpacity={responsiveConfig.deviceType === "tv" ? 1 : 0.8}
+          delayLongPress={responsiveConfig.deviceType === "mobile" ? 500 : 1000}
         >
           <View style={dynamicStyles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
-            {(isFocused && responsiveConfig.deviceType === 'tv') && (
+            {isFocused && responsiveConfig.deviceType === "tv" && (
               <View style={dynamicStyles.overlay}>
                 {isContinueWatching && (
                   <View style={dynamicStyles.continueWatchingBadge}>
-                    <Play size={responsiveConfig.deviceType === 'tv' ? 16 : 12} color="#ffffff" fill="#ffffff" />
+                    <Play size={responsiveConfig.deviceType === "tv" ? 16 : 12} color="#ffffff" fill="#ffffff" />
                     <ThemedText style={dynamicStyles.continueWatchingText}>继续观看</ThemedText>
                   </View>
                 )}
@@ -231,52 +231,93 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
             )}
 
             {rate && (
-              <View style={[styles.ratingContainer, { 
-                top: responsiveConfig.spacing / 2,
-                right: responsiveConfig.spacing / 2 
-              }]}>
-                <Star size={responsiveConfig.deviceType === 'mobile' ? 10 : 12} color="#FFD700" fill="#FFD700" />
-                <ThemedText style={[styles.ratingText, { 
-                  fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12 
-                }]}>{rate}</ThemedText>
+              <View
+                style={[
+                  styles.ratingContainer,
+                  {
+                    top: responsiveConfig.spacing / 2,
+                    right: responsiveConfig.spacing / 2,
+                  },
+                ]}
+              >
+                <Star size={responsiveConfig.deviceType === "mobile" ? 10 : 12} color="#FFD700" fill="#FFD700" />
+                <ThemedText
+                  style={[
+                    styles.ratingText,
+                    {
+                      fontSize: responsiveConfig.deviceType === "mobile" ? 10 : 12,
+                    },
+                  ]}
+                >
+                  {rate}
+                </ThemedText>
               </View>
             )}
             {year && (
-              <View style={[styles.yearBadge, { 
-                top: responsiveConfig.spacing / 2,
-                right: responsiveConfig.spacing / 2 
-              }]}>
-                <Text style={[styles.badgeText, { 
-                  fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12 
-                }]}>{year}</Text>
+              <View
+                style={[
+                  styles.yearBadge,
+                  {
+                    top: responsiveConfig.spacing / 2,
+                    right: responsiveConfig.spacing / 2,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.badgeText,
+                    {
+                      fontSize: responsiveConfig.deviceType === "mobile" ? 10 : 12,
+                    },
+                  ]}
+                >
+                  {year}
+                </Text>
               </View>
             )}
             {sourceName && (
-              <View style={[styles.sourceNameBadge, { 
-                top: responsiveConfig.spacing / 2,
-                left: responsiveConfig.spacing / 2 
-              }]}>
-                <Text style={[styles.badgeText, { 
-                  fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12 
-                }]}>{sourceName}</Text>
+              <View
+                style={[
+                  styles.sourceNameBadge,
+                  {
+                    top: responsiveConfig.spacing / 2,
+                    left: responsiveConfig.spacing / 2,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.badgeText,
+                    {
+                      fontSize: responsiveConfig.deviceType === "mobile" ? 10 : 12,
+                    },
+                  ]}
+                >
+                  {sourceName}
+                </Text>
               </View>
             )}
           </View>
           <View style={dynamicStyles.infoContainer}>
-            <ThemedText 
-              numberOfLines={responsiveConfig.deviceType === 'mobile' ? 2 : 1}
-              style={{ 
-                fontSize: responsiveConfig.deviceType === 'mobile' ? 14 : 16,
-                lineHeight: responsiveConfig.deviceType === 'mobile' ? 18 : 20,
+            <ThemedText
+              numberOfLines={responsiveConfig.deviceType === "mobile" ? 2 : 1}
+              style={{
+                fontSize: responsiveConfig.deviceType === "mobile" ? 14 : 16,
+                lineHeight: responsiveConfig.deviceType === "mobile" ? 18 : 20,
               }}
             >
               {title}
             </ThemedText>
             {isContinueWatching && (
               <View style={styles.infoRow}>
-                <ThemedText style={[styles.continueLabel, { 
-                  fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12 
-                }]}>
+                <ThemedText
+                  style={[
+                    styles.continueLabel,
+                    {
+                      fontSize: responsiveConfig.deviceType === "mobile" ? 10 : 12,
+                    },
+                  ]}
+                >
                   第{episodeIndex! + 1}集 已观看 {Math.round((progress || 0) * 100)}%
                 </ThemedText>
               </View>
