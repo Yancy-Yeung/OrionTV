@@ -84,10 +84,9 @@ const VideoCard = forwardRef<View, VideoCardProps>(
 
     const handleFocus = useCallback(() => {
       setIsFocused(true);
-      Animated.spring(scale, {
+      Animated.timing(scale, {
         toValue: 1.05,
-        damping: 15,
-        stiffness: 200,
+        duration: 150,
         useNativeDriver: true,
       }).start();
       onFocus?.();

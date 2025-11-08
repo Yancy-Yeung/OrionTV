@@ -30,21 +30,23 @@ interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
  * 响应式VideoCard组件
  * 根据设备类型自动选择合适的VideoCard实现
  */
-const VideoCard = React.forwardRef<any, VideoCardProps>((props, ref) => {
-  const { deviceType } = useResponsiveLayout();
+const VideoCard = React.memo(
+  React.forwardRef<any, VideoCardProps>((props, ref) => {
+    const { deviceType } = useResponsiveLayout();
 
-  switch (deviceType) {
-    case "mobile":
-      return <VideoCardMobile {...props} ref={ref} />;
+    switch (deviceType) {
+      case "mobile":
+        return <VideoCardMobile {...props} ref={ref} />;
 
-    case "tablet":
-      return <VideoCardTablet {...props} ref={ref} />;
+      case "tablet":
+        return <VideoCardTablet {...props} ref={ref} />;
 
-    case "tv":
-    default:
-      return <VideoCardTV {...props} ref={ref} />;
-  }
-});
+      case "tv":
+      default:
+        return <VideoCardTV {...props} ref={ref} />;
+    }
+  })
+);
 
 VideoCard.displayName = "VideoCard";
 

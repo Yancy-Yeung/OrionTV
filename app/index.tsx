@@ -151,6 +151,13 @@ export default function HomeScreen() {
     }
   }, [loading, contentData.length, fadeAnim]);
 
+  // 清理动画资源
+  useEffect(() => {
+    return () => {
+      fadeAnim.stopAnimation();
+    };
+  }, [fadeAnim]);
+
   const handleCategorySelect = (category: Category) => {
     setSelectedTag(null);
     selectCategory(category);
@@ -182,23 +189,26 @@ export default function HomeScreen() {
     );
   };
 
-  const renderContentItem = ({ item }: { item: RowItem; index: number }) => (
-    <VideoCard
-      id={item.id}
-      source={item.source}
-      title={item.title}
-      poster={item.poster}
-      year={item.year}
-      rate={item.rate}
-      progress={item.progress}
-      playTime={item.play_time}
-      episodeIndex={item.episodeIndex}
-      sourceName={item.sourceName}
-      totalEpisodes={item.totalEpisodes}
-      api={api}
-      isFromRecord={selectedCategory?.type === "record"}
-      onRecordDeleted={fetchInitialData}
-    />
+  const renderContentItem = useCallback(
+    ({ item }: { item: RowItem; index: number }) => (
+      <VideoCard
+        id={item.id}
+        source={item.source}
+        title={item.title}
+        poster={item.poster}
+        year={item.year}
+        rate={item.rate}
+        progress={item.progress}
+        playTime={item.play_time}
+        episodeIndex={item.episodeIndex}
+        sourceName={item.sourceName}
+        totalEpisodes={item.totalEpisodes}
+        api={api}
+        isFromRecord={selectedCategory?.type === "record"}
+        onRecordDeleted={fetchInitialData}
+      />
+    ),
+    [selectedCategory?.type, fetchInitialData]
   );
 
   const renderFooter = () => {
