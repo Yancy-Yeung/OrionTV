@@ -28,47 +28,48 @@ export interface Category {
 
 const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
-  { title: "热门剧集", type: "tv", tag: "热门" },
-  { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "日本动画", "动画"] },
+  { title: "电视剧", type: "tv", tags: ["国产剧", "日本动画", "动画", "美剧", "英剧", "韩剧", "日剧", "港剧"] },
   {
     title: "电影",
     type: "movie",
     tags: [
-      "热门",
       "最新",
+      "欧美",
+      "韩国",
+      "印度",
+      "日本",
+      "华语",
+      "科幻",
+      "喜剧",
+      "爱情",
+      "恐怖",
+      "悬疑",
+      "动作",
+      "热门",
       "经典",
       "豆瓣高分",
       "冷门佳片",
-      "华语",
-      "欧美",
-      "韩国",
-      "日本",
-      "动作",
-      "喜剧",
-      "爱情",
-      "科幻",
-      "悬疑",
-      "恐怖",
     ],
   },
-  { title: "综艺", type: "tv", tag: "综艺" },
+  { title: "热门剧集", type: "tv", tag: "热门" },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
+  { title: "综艺", type: "tv", tag: "综艺" },
 ];
 
 // 添加缓存项接口
 interface CacheItem {
   data: RowItem[];
   timestamp: number;
-  type: 'movie' | 'tv' | 'record';
+  type: "movie" | "tv" | "record";
   hasMore: boolean;
 }
 
 const CACHE_EXPIRE_TIME = 5 * 60 * 1000; // 5分钟过期
 const MAX_CACHE_SIZE = 10; // 最大缓存容量
-const MAX_ITEMS_PER_CACHE = 40; // 每个缓存最大条目数
+const MAX_ITEMS_PER_CACHE = 60; // 每个缓存最大条目数
 
 const getCacheKey = (category: Category) => {
-  return `${category.type || 'unknown'}-${category.title}-${category.tag || ''}`;
+  return `${category.type || "unknown"}-${category.title}-${category.tag || ""}`;
 };
 
 const isValidCache = (cacheItem: CacheItem) => {
@@ -112,7 +113,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
     const cacheKey = getCacheKey(selectedCategory);
 
     // 最近播放不缓存，始终实时获取
-    if (selectedCategory.type === 'record') {
+    if (selectedCategory.type === "record") {
       set({ loading: true, contentData: [], pageStart: 0, hasMore: true, error: null });
       await get().loadMoreData();
       return;
@@ -126,7 +127,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
         contentData: cachedData.data,
         pageStart: cachedData.data.length,
         hasMore: cachedData.hasMore,
-        error: null
+        error: null,
       });
       return;
     }
@@ -172,12 +173,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
 
         set({ contentData: rowItems, hasMore: false });
       } else if (selectedCategory.type && selectedCategory.tag) {
-        const result = await api.getDoubanData(
-          selectedCategory.type,
-          selectedCategory.tag,
-          20,
-          pageStart
-        );
+        const result = await api.getDoubanData(selectedCategory.type, selectedCategory.tag, 60, pageStart);
 
         const newItems = result.list.map((item) => ({
           ...item,
@@ -209,7 +205,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
             data: cacheItems,
             timestamp: Date.now(),
             type: selectedCategory.type,
-            hasMore: true // 始终为 true，因为我们允许继续加载
+            hasMore: true, // 始终为 true，因为我们允许继续加载
           });
 
           set({
@@ -229,7 +225,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
               dataCache.set(cacheKey, {
                 ...existingCache,
                 data: limitedCacheData,
-                hasMore: true // 始终为 true，因为我们允许继续加载
+                hasMore: true, // 始终为 true，因为我们允许继续加载
               });
             }
           }
@@ -282,10 +278,10 @@ const useHomeStore = create<HomeState>((set, get) => ({
         contentData: [],
         pageStart: 0,
         hasMore: true,
-        error: null
+        error: null,
       });
 
-      if (category.type === 'record') {
+      if (category.type === "record") {
         get().fetchInitialData();
         return;
       }
@@ -296,7 +292,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
           contentData: cachedData.data,
           pageStart: cachedData.data.length,
           hasMore: cachedData.hasMore,
-          loading: false
+          loading: false,
         });
       } else {
         // 删除过期缓存
