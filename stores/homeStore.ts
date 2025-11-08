@@ -28,12 +28,11 @@ export interface Category {
 
 const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
-  { title: "电视剧", type: "tv", tags: ["全部", "日本动画", "动漫", "国产", "欧美", "韩剧", "日剧", "港剧", "泰国"] },
+  { title: "电视剧", type: "tv", tags: ["全部", "日本动画", "国产", "欧美", "韩剧", "日剧", "港剧"] },
   {
     title: "电影",
     type: "movie",
     tags: [
-      "全部",
       "最新",
       "欧美",
       "韩国",
