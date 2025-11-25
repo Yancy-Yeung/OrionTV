@@ -64,7 +64,7 @@ export default function HomeScreen() {
       if (selectedCategory?.type === "record") {
         refreshPlayRecords();
       }
-    }, [selectedCategory, refreshPlayRecords])
+    }, [refreshPlayRecords])
   );
 
   // 双击返回退出逻辑（只限当前页面）
