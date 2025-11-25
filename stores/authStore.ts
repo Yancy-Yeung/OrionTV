@@ -2,10 +2,11 @@ import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "@/services/api";
 import { useSettingsStore } from "./settingsStore";
+import { LoginCredentialsManager } from "@/services/storage";
 import Toast from "react-native-toast-message";
 import Logger from "@/utils/Logger";
 
-const logger = Logger.withTag('AuthStore');
+const logger = Logger.withTag("AuthStore");
 
 interface AuthState {
   isLoggedIn: boolean;
@@ -39,7 +40,7 @@ const useAuthStore = create<AuthState>((set) => ({
         let waitTime = 0;
 
         while (waitTime < maxWaitTime) {
-          await new Promise(resolve => setTimeout(resolve, checkInterval));
+          await new Promise((resolve) => setTimeout(resolve, checkInterval));
           waitTime += checkInterval;
           const currentState = useSettingsStore.getState();
           if (!currentState.isLoadingServerConfig) {
@@ -57,7 +58,7 @@ const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      const authToken = await AsyncStorage.getItem('authCookies');
+      const authToken = await AsyncStorage.getItem("authCookies");
       if (!authToken) {
         if (serverConfig && serverConfig.StorageType === "localstorage") {
           const loginResult = await api.login().catch(() => {
@@ -70,7 +71,32 @@ const useAuthStore = create<AuthState>((set) => ({
           set({ isLoggedIn: false, isLoginModalVisible: true });
         }
       } else {
-        set({ isLoggedIn: true, isLoginModalVisible: false });
+        // 如果有 cookies，尝试验证登录状态
+        try {
+          // 这里可以添加一个简单的验证请求，比如获取用户信息或检查 session
+          // 暂时通过一个简单的请求来验证 cookies 是否有效
+          await api.getServerConfig(); // 假设这个请求需要认证
+          set({ isLoggedIn: true, isLoginModalVisible: false });
+        } catch (error) {
+          // 如果验证失败，尝试使用保存的凭证重新登录
+          const savedCredentials = await LoginCredentialsManager.get();
+          if (savedCredentials) {
+            try {
+              const loginResult = await api.login(savedCredentials.username, savedCredentials.password);
+              if (loginResult && loginResult.ok) {
+                // 重新验证登录状态
+                await api.getServerConfig();
+                set({ isLoggedIn: true, isLoginModalVisible: false });
+                return;
+              }
+            } catch (loginError) {
+              logger.error("Failed to auto re-login:", loginError);
+            }
+          }
+          // 如果重新登录失败，清空无效 cookies 并显示登录模态框
+          await AsyncStorage.removeItem("authCookies");
+          set({ isLoggedIn: false, isLoginModalVisible: true });
+        }
       }
     } catch (error) {
       logger.error("Failed to check login status:", error);

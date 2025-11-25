@@ -93,7 +93,17 @@ export class API {
       throw new Error("API_URL_NOT_SET");
     }
 
-    const response = await fetch(`${this.baseURL}${url}`, options);
+    // 获取存储的 cookies 并添加到请求头
+    const authCookies = await AsyncStorage.getItem("authCookies");
+    const headers = { ...(options.headers as Record<string, string>) };
+    if (authCookies) {
+      headers["Cookie"] = authCookies;
+    }
+
+    const response = await fetch(`${this.baseURL}${url}`, {
+      ...options,
+      headers,
+    });
 
     if (response.status === 401) {
       throw new Error("UNAUTHORIZED");
