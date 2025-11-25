@@ -155,10 +155,10 @@ export default function HomeScreen() {
     setSelectedTag(null);
     selectCategory(category);
 
-    // 只在切换到"最近播放"分类时刷新播放记录
-    if (category.type === "record") {
-      refreshPlayRecords();
-    }
+    // 不再在切换到"最近播放"时额外刷新，因为 selectCategory 已经会加载数据
+    // if (category.type === "record") {
+    //   refreshPlayRecords();
+    // }
   };
 
   const handleTagSelect = (tag: string) => {
