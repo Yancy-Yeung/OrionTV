@@ -28,7 +28,6 @@ export interface Category {
 
 const initialCategories: Category[] = [
   { title: "最近播放", type: "record" },
-  { title: "电视剧", type: "tv", tags: ["日本动画", "国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧"] },
   {
     title: "电影",
     type: "movie",
@@ -51,6 +50,7 @@ const initialCategories: Category[] = [
       "冷门佳片",
     ],
   },
+  { title: "电视剧", type: "tv", tags: ["日本动画", "国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧"] },
   { title: "热门剧集", type: "tv", tag: "热门" },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
   { title: "综艺", type: "tv", tag: "综艺" },
