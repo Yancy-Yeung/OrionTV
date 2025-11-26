@@ -29,8 +29,15 @@ const useAuthStore = create<AuthState>((set) => ({
     }
     try {
       // Wait for server config to be loaded if it's currently loading
-      const settingsState = useSettingsStore.getState();
+      let settingsState = useSettingsStore.getState();
       let serverConfig = settingsState.serverConfig;
+
+      // If server config is not loaded and not currently loading, try to fetch it
+      if (!serverConfig && !settingsState.isLoadingServerConfig) {
+        await useSettingsStore.getState().fetchServerConfig();
+        settingsState = useSettingsStore.getState();
+        serverConfig = settingsState.serverConfig;
+      }
 
       // If server config is loading, wait a bit for it to complete
       if (settingsState.isLoadingServerConfig) {
