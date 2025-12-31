@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
+import { LazyLoadImage } from "react-native-lazyload";
 import { PlayRecordManager } from "@/services/storage";
 import { API } from "@/services/api";
 import { ThemedText } from "@/components/ThemedText";
@@ -150,7 +151,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
           delayLongPress={900}
         >
           <View style={[styles.card, isPressed && styles.cardPressed]}>
-            <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
+            <LazyLoadImage source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
             
             {/* 悬停效果遮罩 */}
             {isPressed && (
