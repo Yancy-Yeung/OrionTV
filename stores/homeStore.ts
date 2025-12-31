@@ -26,8 +26,7 @@ export interface Category {
   tags?: string[];
 }
 
-const initialCategories: Category[] = [
-  { title: "最近播放", type: "record" },
+const initialCategories: Category[] = [  
   {
     title: "电影",
     type: "movie",
@@ -54,6 +53,7 @@ const initialCategories: Category[] = [
   { title: "热门剧集", type: "tv", tag: "热门" },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
   { title: "综艺", type: "tv", tag: "综艺" },
+  { title: "最近播放", type: "record" },
 ];
 
 // 添加缓存项接口
@@ -64,9 +64,9 @@ interface CacheItem {
   hasMore: boolean;
 }
 
-const CACHE_EXPIRE_TIME = 5 * 60 * 1000; // 5分钟过期
+const CACHE_EXPIRE_TIME = 60 * 60 * 1000; // 60分钟过期
 const MAX_CACHE_SIZE = 10; // 最大缓存容量
-const MAX_ITEMS_PER_CACHE = 60; // 每个缓存最大条目数
+const MAX_ITEMS_PER_CACHE = 40; // 每个缓存最大条目数
 
 const getCacheKey = (category: Category) => {
   return `${category.type || "unknown"}-${category.title}-${category.tag || ""}`;
