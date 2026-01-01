@@ -1,14 +1,15 @@
-# OrionTV 📺
-
-一个基于 React Native TVOS 和 Expo 构建的播放器，旨在提供流畅的视频观看体验。
-
-当前这个版本主要改造:
+# 当前这个版本主要改造:
 
 1. 修复主页因"最近播放"的更新而重新加载的问题;
 2. 收藏列表, 调整收藏的是视频卡片,不应该直接加载视频播放;
 3. 调整每次加载数据的数量, 从 20 调整为 40 , 个人喜欢一次性多加载;
 4. 优化因不断加载数据, 从而导致 TV 版操作卡顿, 其他地方保持原版本不变;
 5. 修正"最近播放"列表经常不显示的问题;
+
+
+# OrionTV 📺
+
+一个基于 React Native TVOS 和 Expo 构建的播放器，旨在提供流畅的视频观看体验。
 
 ## ✨ 功能特性
 
@@ -48,7 +49,7 @@
 
 请确保您的开发环境中已安装以下软件：
 
-- [Node.js](https://nodejs.org/) (LTS 版本)
+- [Node.js](https://nodejs.org/) (v22 LTS 版本)
 - [Yarn](https://yarnpkg.com/)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 - [Xcode](https://developer.apple.com/xcode/) (用于 Apple TV 开发)
@@ -97,17 +98,4 @@ OrionTV 仅作为视频搜索工具，不存储、上传或分发任何视频内
 
 本项目开发者不对使用本项目产生的任何后果负责。使用本项目时，您必须遵守当地的法律法规。
 
-## 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=zimplexing/OrionTV&type=Date)](https://www.star-history.com/#zimplexing/OrionTV&Date)
-
-## 🙏 致谢
-
-本项目受到以下开源项目的启发：
-
-- [MoonTV](https://github.com/senshinya/MoonTV) - 一个基于 Next.js 的视频聚合应用
-- [LibreTV](https://github.com/LibreSpark/LibreTV) - 一个开源的视频流媒体应用
-
-感谢以下项目提供 API Key 的赞助
-
-- [gpt-load](https://github.com/tbphp/gpt-load) - 一个高性能的 OpenAI 格式 API 多密钥轮询代理服务器，支持负载均衡，使用 Go 语言开发
