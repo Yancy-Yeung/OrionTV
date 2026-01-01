@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
@@ -9,6 +9,7 @@ import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from "@/utils/Logger";
+import FastImage from 'react-native-fast-image';
 
 const logger = Logger.withTag("ResponsiveVideoCard");
 
@@ -51,6 +52,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
     const router = useRouter();
     const [isFocused, setIsFocused] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(0));
+    const [imageLoaded, setImageLoaded] = useState(false);
     const responsiveConfig = useResponsiveLayout();
 
     const longPressTriggered = useRef(false);
@@ -211,7 +213,17 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
           delayLongPress={responsiveConfig.deviceType === "mobile" ? 500 : 1000}
         >
           <View style={dynamicStyles.card}>
-            <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
+            {!imageLoaded && (
+              <View style={styles.imagePlaceholder}>
+                <ActivityIndicator size="small" color="#666" />
+              </View>
+            )}
+            <FastImage
+              source={{ uri: api.getImageProxyUrl(poster) }}
+              style={[styles.poster, !imageLoaded && { opacity: 0 }]}
+              resizeMode={FastImage.resizeMode.cover}
+              onLoadEnd={() => setImageLoaded(true)}
+            />
             {isFocused && responsiveConfig.deviceType === "tv" && (
               <View style={dynamicStyles.overlay}>
                 {isContinueWatching && (
@@ -340,6 +352,16 @@ const styles = StyleSheet.create({
   poster: {
     width: "100%",
     height: "100%",
+  },
+  imagePlaceholder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#333',
   },
   buttonRow: {
     position: "absolute",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
@@ -9,6 +9,7 @@ import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
+import FastImage from 'react-native-fast-image';
 
 const logger = Logger.withTag('VideoCardTablet');
 
@@ -52,11 +53,8 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
     const { cardWidth, cardHeight, spacing } = useResponsiveLayout();
     const [fadeAnim] = useState(new Animated.Value(0));
     const [isPressed, setIsPressed] = useState(false);
-
-    const longPressTriggered = useRef(false);
-    const scale = useRef(new Animated.Value(1)).current;
-
-    const handlePress = () => {
+  const [imageLoaded, setImageLoaded] = useState(false);  const longPressTriggered = useRef(false);
+  const scale = useRef(new Animated.Value(1)).current;    const handlePress = () => {
       if (longPressTriggered.current) {
         longPressTriggered.current = false;
         return;
@@ -150,7 +148,17 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
           delayLongPress={900}
         >
           <View style={[styles.card, isPressed && styles.cardPressed]}>
-            <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
+            {!imageLoaded && (
+              <View style={styles.imagePlaceholder}>
+                <ActivityIndicator size="small" color="#666" />
+              </View>
+            )}
+            <FastImage
+              source={{ uri: api.getImageProxyUrl(poster) }}
+              style={[styles.poster, !imageLoaded && { opacity: 0 }]}
+              resizeMode={FastImage.resizeMode.cover}
+              onLoadEnd={() => setImageLoaded(true)}
+            />
             
             {/* 悬停效果遮罩 */}
             {isPressed && (
@@ -237,6 +245,16 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       width: "100%",
       height: "100%",
       resizeMode: 'cover',
+    },
+    imagePlaceholder: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#333',
     },
     pressOverlay: {
       ...StyleSheet.absoluteFillObject,
