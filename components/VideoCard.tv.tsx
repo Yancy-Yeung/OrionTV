@@ -115,7 +115,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       longPressTriggered.current = true;
 
       // Show confirmation dialog to delete play record
-      Alert.alert("删除观看记录", `确定要删除"${title}"的观看记录吗？`, [
+      Alert.alert("删除观看记录", `确定要删除"${title}"的记录吗？`, [
         {
           text: "取消",
           style: "cancel",

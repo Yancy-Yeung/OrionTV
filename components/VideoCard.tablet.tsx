@@ -62,7 +62,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
         return;
       }
       
-      if (progress !== undefined && episodeIndex !== undefined) {
+      if (progress !== 0 && episodeIndex !== undefined) {
         router.push({
           pathname: "/play",
           params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
@@ -109,7 +109,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
 
       longPressTriggered.current = true;
 
-      Alert.alert("删除观看记录", `确定要删除"${title}"的观看记录吗？`, [
+      Alert.alert("删除观看记录", `确定要删除"${title}"的记录吗？`, [
         {
           text: "取消",
           style: "cancel",

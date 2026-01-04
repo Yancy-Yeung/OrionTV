@@ -175,7 +175,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
         const result = await api.getDoubanData(
           selectedCategory.type,
           selectedCategory.tag,
-          20,
+          40,
           pageStart
         );
 
