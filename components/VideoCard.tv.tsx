@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
-import { View, Text, StyleSheet, Pressable, TouchableOpacity, Alert, Animated, Platform, ActivityIndicator } from "react-native";
+import { View, Text, Image, StyleSheet, Pressable, TouchableOpacity, Alert, Animated, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
 import { API } from "@/services/api";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
-import Logger from "@/utils/Logger";
+import Logger from '@/utils/Logger';
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import FastImage from 'react-native-fast-image';
 
-const logger = Logger.withTag("VideoCardTV");
+const logger = Logger.withTag('VideoCardTV');
 
 interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   id: string;
@@ -27,7 +26,6 @@ interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   onFocus?: () => void;
   onRecordDeleted?: () => void; // 添加回调属性
   api: API;
-  isFromRecord?: boolean; // 是否来自最近播放
 }
 
 const VideoCard = forwardRef<View, VideoCardProps>(
@@ -45,7 +43,6 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       onFocus,
       onRecordDeleted,
       api,
-      isFromRecord = false,
       playTime = 0,
     }: VideoCardProps,
     ref
@@ -53,7 +50,6 @@ const VideoCard = forwardRef<View, VideoCardProps>(
     const router = useRouter();
     const [isFocused, setIsFocused] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(0));
-    const [imageLoaded, setImageLoaded] = useState(false);
 
     const longPressTriggered = useRef(false);
 
@@ -70,8 +66,8 @@ const VideoCard = forwardRef<View, VideoCardProps>(
         longPressTriggered.current = false;
         return;
       }
-      // 如果是最近播放且有播放进度，直接转到播放页面
-      if (isFromRecord && progress !== undefined && episodeIndex !== undefined) {
+      // 如果有播放进度，直接转到播放页面
+      if (progress !== undefined && episodeIndex !== undefined) {
         router.push({
           pathname: "/play",
           params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
@@ -155,7 +151,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
     return (
       <Animated.View style={[styles.wrapper, animatedStyle, { opacity: fadeAnim }]}>
         <Pressable
-          android_ripple={Platform.isTV || deviceType !== "tv" ? { color: "transparent" } : { color: Colors.dark.link }}
+          android_ripple={Platform.isTV || deviceType !== 'tv' ? { color: 'transparent' } : { color: Colors.dark.link }}
           onPress={handlePress}
           onLongPress={handleLongPress}
           onFocus={handleFocus}
@@ -170,17 +166,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
           delayLongPress={1000}
         >
           <View style={styles.card}>
-            {!imageLoaded && (
-              <View style={styles.imagePlaceholder}>
-                <ActivityIndicator size="small" color="#666" />
-              </View>
-            )}
-            <FastImage
-              source={{ uri: api.getImageProxyUrl(poster) }}
-              style={[styles.poster, !imageLoaded && { opacity: 0 }]}
-              resizeMode={FastImage.resizeMode.cover}
-              onLoadEnd={() => setImageLoaded(true)}
-            />
+            <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
             {isFocused && (
               <View style={styles.overlay}>
                 {isContinueWatching && (
@@ -246,7 +232,7 @@ const styles = StyleSheet.create({
   pressable: {
     width: CARD_WIDTH + 20,
     height: CARD_HEIGHT + 60,
-    justifyContent: "center",
+    justifyContent: 'center',
     alignItems: "center",
     overflow: "visible",
   },
@@ -261,16 +247,6 @@ const styles = StyleSheet.create({
   poster: {
     width: "100%",
     height: "100%",
-  },
-  imagePlaceholder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#333',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

@@ -1,12 +1,12 @@
-import React from "react";
-import { TouchableOpacity } from "react-native";
-import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { API } from "@/services/api";
+import React from 'react';
+import { TouchableOpacity } from 'react-native';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { API } from '@/services/api';
 
 // 导入不同平台的VideoCard组件
-import VideoCardMobile from "./VideoCard.mobile";
-import VideoCardTablet from "./VideoCard.tablet";
-import VideoCardTV from "./VideoCard.tv";
+import VideoCardMobile from './VideoCard.mobile';
+import VideoCardTablet from './VideoCard.tablet';
+import VideoCardTV from './VideoCard.tv';
 
 interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   id: string;
@@ -23,7 +23,6 @@ interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   onFocus?: () => void;
   onRecordDeleted?: () => void;
   api: API;
-  isFromRecord?: boolean;
 }
 
 /**
@@ -34,18 +33,18 @@ const VideoCard = React.forwardRef<any, VideoCardProps>((props, ref) => {
   const { deviceType } = useResponsiveLayout();
 
   switch (deviceType) {
-    case "mobile":
+    case 'mobile':
       return <VideoCardMobile {...props} ref={ref} />;
-
-    case "tablet":
+    
+    case 'tablet':
       return <VideoCardTablet {...props} ref={ref} />;
-
-    case "tv":
+    
+    case 'tv':
     default:
       return <VideoCardTV {...props} ref={ref} />;
   }
 });
 
-VideoCard.displayName = "VideoCard";
+VideoCard.displayName = 'VideoCard';
 
 export default VideoCard;

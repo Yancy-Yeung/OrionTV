@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { api, SearchResult, PlayRecord } from "@/services/api";
-// import { PlayRecordManager } from "@/services/storage";
+import { PlayRecordManager } from "@/services/storage";
 import useAuthStore from "./authStore";
 import { useSettingsStore } from "./settingsStore";
 
@@ -27,30 +27,29 @@ export interface Category {
 }
 
 const initialCategories: Category[] = [  
+  { title: "热门剧集", type: "tv", tag: "热门" },
   {
     title: "电影",
     type: "movie",
     tags: [
+      "热门",
       "最新",
+      "经典",      
+      "华语",
       "欧美",
       "韩国",
-      "印度",
       "日本",
-      "泰国",
-      "华语",
-      "科幻",
+      "动作",
       "喜剧",
       "爱情",
-      "恐怖",
+      "科幻",
       "悬疑",
-      "动作",
-      "经典",
+      "恐怖",
       "豆瓣高分",
       "冷门佳片",
     ],
   },
-  { title: "电视剧", type: "tv", tags: ["日本动画", "国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧"] },
-  { title: "热门剧集", type: "tv", tag: "热门" },
+  { title: "电视剧", type: "tv", tags: ["国产剧", "美剧", "英剧", "韩剧", "日剧", "港剧", "日本动画", "动画"] },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
   { title: "综艺", type: "tv", tag: "综艺" },
   { title: "最近播放", type: "record" },
@@ -60,16 +59,16 @@ const initialCategories: Category[] = [
 interface CacheItem {
   data: RowItem[];
   timestamp: number;
-  type: "movie" | "tv" | "record";
+  type: 'movie' | 'tv' | 'record';
   hasMore: boolean;
 }
 
-const CACHE_EXPIRE_TIME = 60 * 60 * 1000; // 60分钟过期
+const CACHE_EXPIRE_TIME = 5 * 60 * 1000; // 5分钟过期
 const MAX_CACHE_SIZE = 10; // 最大缓存容量
 const MAX_ITEMS_PER_CACHE = 40; // 每个缓存最大条目数
 
 const getCacheKey = (category: Category) => {
-  return `${category.type || "unknown"}-${category.title}-${category.tag || ""}`;
+  return `${category.type || 'unknown'}-${category.title}-${category.tag || ''}`;
 };
 
 const isValidCache = (cacheItem: CacheItem) => {
@@ -113,7 +112,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
     const cacheKey = getCacheKey(selectedCategory);
 
     // 最近播放不缓存，始终实时获取
-    if (selectedCategory.type === "record") {
+    if (selectedCategory.type === 'record') {
       set({ loading: true, contentData: [], pageStart: 0, hasMore: true, error: null });
       await get().loadMoreData();
       return;
@@ -127,7 +126,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
         contentData: cachedData.data,
         pageStart: cachedData.data.length,
         hasMore: cachedData.hasMore,
-        error: null,
+        error: null
       });
       return;
     }
@@ -151,7 +150,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
           set({ contentData: [], hasMore: false });
           return;
         }
-        const records = await api.getPlayRecords();
+        const records = await PlayRecordManager.getAll();
         const rowItems = Object.entries(records)
           .map(([key, record]) => {
             const [source, id] = key.split("+");
@@ -173,7 +172,12 @@ const useHomeStore = create<HomeState>((set, get) => ({
 
         set({ contentData: rowItems, hasMore: false });
       } else if (selectedCategory.type && selectedCategory.tag) {
-        const result = await api.getDoubanData(selectedCategory.type, selectedCategory.tag, 60, pageStart);
+        const result = await api.getDoubanData(
+          selectedCategory.type,
+          selectedCategory.tag,
+          20,
+          pageStart
+        );
 
         const newItems = result.list.map((item) => ({
           ...item,
@@ -205,7 +209,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
             data: cacheItems,
             timestamp: Date.now(),
             type: selectedCategory.type,
-            hasMore: true, // 始终为 true，因为我们允许继续加载
+            hasMore: true // 始终为 true，因为我们允许继续加载
           });
 
           set({
@@ -225,7 +229,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
               dataCache.set(cacheKey, {
                 ...existingCache,
                 data: limitedCacheData,
-                hasMore: true, // 始终为 true，因为我们允许继续加载
+                hasMore: true // 始终为 true，因为我们允许继续加载
               });
             }
           }
@@ -278,10 +282,10 @@ const useHomeStore = create<HomeState>((set, get) => ({
         contentData: [],
         pageStart: 0,
         hasMore: true,
-        error: null,
+        error: null
       });
 
-      if (category.type === "record") {
+      if (category.type === 'record') {
         get().fetchInitialData();
         return;
       }
@@ -292,7 +296,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
           contentData: cachedData.data,
           pageStart: cachedData.data.length,
           hasMore: cachedData.hasMore,
-          loading: false,
+          loading: false
         });
       } else {
         // 删除过期缓存
@@ -322,7 +326,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
       });
       return;
     }
-    const records = await api.getPlayRecords();
+    const records = await PlayRecordManager.getAll();
     const hasRecords = Object.keys(records).length > 0;
     set((state) => {
       const recordCategoryExists = state.categories.some((c) => c.type === "record");

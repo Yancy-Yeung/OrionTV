@@ -93,17 +93,7 @@ export class API {
       throw new Error("API_URL_NOT_SET");
     }
 
-    // 获取存储的 cookies 并添加到请求头
-    const authCookies = await AsyncStorage.getItem("authCookies");
-    const headers = { ...(options.headers as Record<string, string>) };
-    if (authCookies) {
-      headers["Cookie"] = authCookies;
-    }
-
-    const response = await fetch(`${this.baseURL}${url}`, {
-      ...options,
-      headers,
-    });
+    const response = await fetch(`${this.baseURL}${url}`, options);
 
     if (response.status === 401) {
       throw new Error("UNAUTHORIZED");
@@ -136,7 +126,7 @@ export class API {
     const response = await this._fetch("/api/logout", {
       method: "POST",
     });
-    await AsyncStorage.setItem("authCookies", "");
+    await AsyncStorage.setItem("authCookies", '');
     return response.json();
   }
 
@@ -231,7 +221,7 @@ export class API {
     const url = `/api/search/one?q=${encodeURIComponent(query)}&resourceId=${encodeURIComponent(resourceId)}`;
     const response = await this._fetch(url, { signal });
     const { results } = await response.json();
-    return { results: results.filter((item: any) => item.title === query) };
+    return { results: results.filter((item: any) => item.title === query )};
   }
 
   async getResources(signal?: AbortSignal): Promise<ApiSite[]> {

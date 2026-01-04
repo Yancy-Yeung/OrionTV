@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -11,7 +11,6 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
-import FastImage from 'react-native-fast-image';
 
 export default function DetailScreen() {
   const { q, source, id } = useLocalSearchParams<{ q: string; source?: string; id?: string }>();
@@ -113,7 +112,7 @@ export default function DetailScreen() {
         <ScrollView style={dynamicStyles.scrollContainer}>
           {/* 海报和基本信息 */}
           <View style={dynamicStyles.mobileTopContainer}>
-            <FastImage source={{ uri: detail.poster }} style={dynamicStyles.mobilePoster} resizeMode={FastImage.resizeMode.cover} />
+            <Image source={{ uri: detail.poster }} style={dynamicStyles.mobilePoster} />
             <View style={dynamicStyles.mobileInfoContainer}>
               <View style={dynamicStyles.titleContainer}>
                 <ThemedText style={dynamicStyles.title} numberOfLines={2}>
@@ -196,7 +195,7 @@ export default function DetailScreen() {
       return (
         <ScrollView style={dynamicStyles.scrollContainer}>
           <View style={dynamicStyles.topContainer}>
-            <FastImage source={{ uri: detail.poster }} style={dynamicStyles.poster} resizeMode={FastImage.resizeMode.cover} />
+            <Image source={{ uri: detail.poster }} style={dynamicStyles.poster} />
             <View style={dynamicStyles.infoContainer}>
               <View style={dynamicStyles.titleContainer}>
                 <ThemedText style={dynamicStyles.title} numberOfLines={1} ellipsizeMode="tail">
