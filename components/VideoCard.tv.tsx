@@ -67,7 +67,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
         return;
       }
       // 如果有播放进度，直接转到播放页面
-      if (progress !== undefined && episodeIndex !== undefined) {
+      if (progress !== 0 && episodeIndex !== undefined) {
         router.push({
           pathname: "/play",
           params: { source, id, episodeIndex: episodeIndex - 1, title, position: playTime * 1000 },
