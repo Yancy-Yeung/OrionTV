@@ -331,7 +331,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
     set((state) => {
       const recordCategoryExists = state.categories.some((c) => c.type === "record");
       if (hasRecords && !recordCategoryExists) {
-        return { categories: [initialCategories[0], ...state.categories] };
+        return { categories: [...state.categories,initialCategories[5]] };
       }
       if (!hasRecords && recordCategoryExists) {
         const newCategories = state.categories.filter((c) => c.type !== "record");
