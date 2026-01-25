@@ -26,7 +26,7 @@ export interface Category {
   tags?: string[];
 }
 
-const initialCategories: Category[] = [  
+const initialCategories: Category[] = [
   { title: "热门剧集", type: "tv", tag: "热门" },
   {
     title: "电影",
@@ -34,7 +34,7 @@ const initialCategories: Category[] = [
     tags: [
       "热门",
       "最新",
-      "经典",      
+      "经典",
       "华语",
       "欧美",
       "韩国",
@@ -59,7 +59,7 @@ const initialCategories: Category[] = [
 interface CacheItem {
   data: RowItem[];
   timestamp: number;
-  type: 'movie' | 'tv' | 'record';
+  type: "movie" | "tv" | "record";
   hasMore: boolean;
 }
 
@@ -68,7 +68,7 @@ const MAX_CACHE_SIZE = 10; // 最大缓存容量
 const MAX_ITEMS_PER_CACHE = 40; // 每个缓存最大条目数
 
 const getCacheKey = (category: Category) => {
-  return `${category.type || 'unknown'}-${category.title}-${category.tag || ''}`;
+  return `${category.type || "unknown"}-${category.title}-${category.tag || ""}`;
 };
 
 const isValidCache = (cacheItem: CacheItem) => {
@@ -112,7 +112,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
     const cacheKey = getCacheKey(selectedCategory);
 
     // 最近播放不缓存，始终实时获取
-    if (selectedCategory.type === 'record') {
+    if (selectedCategory.type === "record") {
       set({ loading: true, contentData: [], pageStart: 0, hasMore: true, error: null });
       await get().loadMoreData();
       return;
@@ -126,7 +126,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
         contentData: cachedData.data,
         pageStart: cachedData.data.length,
         hasMore: cachedData.hasMore,
-        error: null
+        error: null,
       });
       return;
     }
@@ -172,12 +172,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
 
         set({ contentData: rowItems, hasMore: false });
       } else if (selectedCategory.type && selectedCategory.tag) {
-        const result = await api.getDoubanData(
-          selectedCategory.type,
-          selectedCategory.tag,
-          40,
-          pageStart
-        );
+        const result = await api.getDoubanData(selectedCategory.type, selectedCategory.tag, 40, pageStart);
 
         const newItems = result.list.map((item) => ({
           ...item,
@@ -209,7 +204,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
             data: cacheItems,
             timestamp: Date.now(),
             type: selectedCategory.type,
-            hasMore: true // 始终为 true，因为我们允许继续加载
+            hasMore: true, // 始终为 true，因为我们允许继续加载
           });
 
           set({
@@ -229,7 +224,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
               dataCache.set(cacheKey, {
                 ...existingCache,
                 data: limitedCacheData,
-                hasMore: true // 始终为 true，因为我们允许继续加载
+                hasMore: true, // 始终为 true，因为我们允许继续加载
               });
             }
           }
@@ -282,10 +277,10 @@ const useHomeStore = create<HomeState>((set, get) => ({
         contentData: [],
         pageStart: 0,
         hasMore: true,
-        error: null
+        error: null,
       });
 
-      if (category.type === 'record') {
+      if (category.type === "record") {
         get().fetchInitialData();
         return;
       }
@@ -296,7 +291,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
           contentData: cachedData.data,
           pageStart: cachedData.data.length,
           hasMore: cachedData.hasMore,
-          loading: false
+          loading: false,
         });
       } else {
         // 删除过期缓存
@@ -331,7 +326,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
     set((state) => {
       const recordCategoryExists = state.categories.some((c) => c.type === "record");
       if (hasRecords && !recordCategoryExists) {
-        return { categories: [...state.categories,initialCategories[5]] };
+        return { categories: [...state.categories, initialCategories[5]] };
       }
       if (!hasRecords && recordCategoryExists) {
         const newCategories = state.categories.filter((c) => c.type !== "record");
@@ -343,7 +338,11 @@ const useHomeStore = create<HomeState>((set, get) => ({
       return {};
     });
 
-    get().fetchInitialData();
+    // 只有当前选中的是"最近播放"分类时才刷新数据
+    const { selectedCategory } = get();
+    if (selectedCategory.type === "record") {
+      get().fetchInitialData();
+    }
   },
 
   clearError: () => {
