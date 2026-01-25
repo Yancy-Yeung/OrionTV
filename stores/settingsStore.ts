@@ -5,7 +5,7 @@ import { storageConfig } from "@/services/storageConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Logger from "@/utils/Logger";
 
-const logger = Logger.withTag('SettingsStore');
+const logger = Logger.withTag("SettingsStore");
 
 interface SettingsState {
   apiBaseUrl: string;
@@ -32,7 +32,7 @@ interface SettingsState {
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  apiBaseUrl: "",
+  apiBaseUrl: "https://tv.kelvin.dpdns.org",
   m3uUrl: "",
   liveStreamSources: [],
   remoteInputEnabled: false,
@@ -80,7 +80,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setVideoSource: (config) => set({ videoSource: config }),
   saveSettings: async () => {
     const { apiBaseUrl, m3uUrl, remoteInputEnabled, videoSource } = get();
-    const currentSettings = await SettingsManager.get()
+    const currentSettings = await SettingsManager.get();
     const currentApiBaseUrl = currentSettings.apiBaseUrl;
     let processedApiBaseUrl = apiBaseUrl.trim();
     if (processedApiBaseUrl.endsWith("/")) {
@@ -107,8 +107,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       remoteInputEnabled,
       videoSource,
     });
-    if ( currentApiBaseUrl !== processedApiBaseUrl) {
-      await AsyncStorage.setItem('authCookies', '');
+    if (currentApiBaseUrl !== processedApiBaseUrl) {
+      await AsyncStorage.setItem("authCookies", "");
     }
     api.setBaseUrl(processedApiBaseUrl);
     // Also update the URL in the state so the input field shows the processed URL
