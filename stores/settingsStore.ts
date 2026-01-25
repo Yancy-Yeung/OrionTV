@@ -32,7 +32,7 @@ interface SettingsState {
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  apiBaseUrl: "https://tv.kelvin.dpdns.org",
+  apiBaseUrl: "",
   m3uUrl: "",
   liveStreamSources: [],
   remoteInputEnabled: false,
@@ -46,7 +46,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   loadSettings: async () => {
     const settings = await SettingsManager.get();
     set({
-      apiBaseUrl: settings.apiBaseUrl,
+      apiBaseUrl: settings.apiBaseUrl || "https://tv.kelvin.dpdns.org",
       m3uUrl: settings.m3uUrl,
       remoteInputEnabled: settings.remoteInputEnabled || false,
       videoSource: settings.videoSource || {
