@@ -1,6 +1,6 @@
-import Logger from '@/utils/Logger';
+import Logger from "@/utils/Logger";
 
-const logger = Logger.withTag('M3U8');
+const logger = Logger.withTag("M3U8");
 
 interface CacheEntry {
   resolution: string | null;
@@ -10,18 +10,47 @@ interface CacheEntry {
 const resolutionCache: { [url: string]: CacheEntry } = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export const getResolutionFromM3U8 = async (
-  url: string,
-  signal?: AbortSignal
-): Promise<string | null> => {
+/**
+ * 测量 M3U8 URL 的网络延迟（ping time）
+ * @param url M3U8 URL
+ * @param signal AbortSignal for cancellation
+ * @returns ping time in milliseconds, or null if failed
+ */
+export const pingM3U8Url = async (url: string, signal?: AbortSignal): Promise<number | null> => {
+  try {
+    const startTime = performance.now();
+    const response = await fetch(url, {
+      method: "HEAD",
+      signal,
+      cache: "no-store", // 避免缓存影响测速
+    });
+    const endTime = performance.now();
+
+    if (response.ok) {
+      const pingTime = Math.round(endTime - startTime);
+      logger.info(`[PING] ${url.substring(0, 50)}... - ${pingTime}ms`);
+      return pingTime;
+    }
+    return null;
+  } catch (error) {
+    if ((error as Error).name !== "AbortError") {
+      logger.info(`[PING] Failed for ${url.substring(0, 50)}...`, error);
+    }
+    return null;
+  }
+};
+
+export const getResolutionFromM3U8 = async (url: string, signal?: AbortSignal): Promise<string | null> => {
   const perfStart = performance.now();
   logger.info(`[PERF] M3U8 resolution detection START - url: ${url.substring(0, 100)}...`);
-  
+
   // 1. Check cache first
   const cachedEntry = resolutionCache[url];
   if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION) {
     const perfEnd = performance.now();
-    logger.info(`[PERF] M3U8 resolution detection CACHED - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${cachedEntry.resolution}`);
+    logger.info(
+      `[PERF] M3U8 resolution detection CACHED - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${cachedEntry.resolution}`,
+    );
     return cachedEntry.resolution;
   }
 
@@ -35,11 +64,11 @@ export const getResolutionFromM3U8 = async (
     const response = await fetch(url, { signal });
     const fetchEnd = performance.now();
     logger.info(`[PERF] M3U8 fetch took ${(fetchEnd - fetchStart).toFixed(2)}ms, status: ${response.status}`);
-    
+
     if (!response.ok) {
       return null;
     }
-    
+
     const parseStart = performance.now();
     const playlist = await response.text();
     const lines = playlist.split("\n");
@@ -58,7 +87,7 @@ export const getResolutionFromM3U8 = async (
         }
       }
     }
-    
+
     const parseEnd = performance.now();
     logger.info(`[PERF] M3U8 parsing took ${(parseEnd - parseStart).toFixed(2)}ms, lines: ${lines.length}`);
 
@@ -69,8 +98,10 @@ export const getResolutionFromM3U8 = async (
     };
 
     const perfEnd = performance.now();
-    logger.info(`[PERF] M3U8 resolution detection COMPLETE - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${resolutionString}`);
-    
+    logger.info(
+      `[PERF] M3U8 resolution detection COMPLETE - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${resolutionString}`,
+    );
+
     return resolutionString;
   } catch (error) {
     const perfEnd = performance.now();

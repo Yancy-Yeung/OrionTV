@@ -1,84 +1,50 @@
 import { create } from "zustand";
 import { SearchResult, api } from "@/services/api";
-import { getResolutionFromM3U8 } from "@/services/m3u8";
+import { getResolutionFromM3U8, pingM3U8Url } from "@/services/m3u8";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { FavoriteManager } from "@/services/storage";
 import Logger from "@/utils/Logger";
 
 const logger = Logger.withTag("DetailStore");
 
-// 计算视频源的综合评分（基于测速信息）
-const calculateVideoScore = (videoInfo: { quality: string; loadSpeed: string; pingTime: number }): number => {
+// 计算视频源的综合评分（基于分辨率和网络延迟）
+const calculateVideoScore = (resolution: string, pingTime: number): number => {
   let score = 0;
 
-  // 分辨率评分 (40% 权重)
+  // 分辨率评分 (60% 权重)
   const qualityScore = (() => {
-    switch (videoInfo.quality) {
-      case "4K":
-        return 100;
-      case "2K":
-        return 85;
-      case "1080p":
-        return 75;
-      case "720p":
-        return 60;
-      case "480p":
-        return 40;
-      case "SD":
-        return 20;
-      default:
-        return 30; // 未知质量给默认分
-    }
+    if (resolution.includes("2160") || resolution.includes("4K")) return 100;
+    if (resolution.includes("1440") || resolution.includes("2K")) return 85;
+    if (resolution.includes("1080")) return 75;
+    if (resolution.includes("720")) return 60;
+    if (resolution.includes("480")) return 40;
+    if (resolution.includes("360")) return 20;
+    return 30; // 未知质量给默认分
   })();
-  score += qualityScore * 0.4;
+  score += qualityScore * 0.6;
 
-  // 加载速度评分 (40% 权重)
-  const speedScore = (() => {
-    const speedStr = videoInfo.loadSpeed;
-    if (speedStr === "未知" || speedStr === "测量中...") return 30;
-
-    const match = speedStr.match(/^([\d.]+)\s*(KB\/s|MB\/s)$/);
-    if (!match) return 30;
-
-    const value = parseFloat(match[1]);
-    const unit = match[2];
-    const speedKBps = unit === "MB/s" ? value * 1024 : value;
-
-    // 基于速度线性映射，最高100分
-    // 假设 5MB/s 为满分基准
-    const maxSpeed = 5120; // 5MB/s
-    const speedRatio = Math.min(speedKBps / maxSpeed, 1);
-    return speedRatio * 100;
-  })();
-  score += speedScore * 0.4;
-
-  // 网络延迟评分 (20% 权重)
+  // 网络延迟评分 (40% 权重)
   const pingScore = (() => {
-    const ping = videoInfo.pingTime;
-    if (ping <= 0) return 0;
+    if (pingTime <= 0) return 30; // 测速失败给默认分
 
     // 延迟越低分数越高
     // 假设 50ms 为满分，1000ms 为0分
     const minPing = 50;
     const maxPing = 1000;
 
-    if (ping <= minPing) return 100;
-    if (ping >= maxPing) return 0;
+    if (pingTime <= minPing) return 100;
+    if (pingTime >= maxPing) return 0;
 
-    return ((maxPing - ping) / (maxPing - minPing)) * 100;
+    return ((maxPing - pingTime) / (maxPing - minPing)) * 100;
   })();
-  score += pingScore * 0.2;
+  score += pingScore * 0.4;
 
   return Math.round(score * 100) / 100; // 保留两位小数
 };
 
 export type SearchResultWithResolution = SearchResult & {
   resolution?: string | null;
-  videoInfo?: {
-    quality: string;
-    loadSpeed: string;
-    pingTime: number;
-  };
+  pingTime?: number; // 网络延迟（毫秒）
 };
 
 interface DetailState {
@@ -88,11 +54,7 @@ interface DetailState {
     source: string;
     source_name: string;
     resolution: string | null | undefined;
-    videoInfo?: {
-      quality: string;
-      loadSpeed: string;
-      pingTime: number;
-    };
+    pingTime?: number; // 网络延迟（毫秒）
   }[];
   detail: SearchResultWithResolution | null;
   loading: boolean;
@@ -151,34 +113,38 @@ const useDetailStore = create<DetailState>((set, get) => ({
 
       const resultsWithResolution = await Promise.all(
         results.map(async (searchResult) => {
-          // 如果结果已经包含 videoInfo（来自 LunaTV API），直接使用
-          if (searchResult.videoInfo) {
+          // 进行客户端分辨率检测和网络延迟测试
+          let resolution: string | null = null;
+          let pingTime: number | undefined = undefined;
+
+          if (searchResult.episodes && searchResult.episodes.length > 0) {
+            const episodeUrl = searchResult.episodes[0];
+
+            // 并发执行分辨率检测和延迟测试
+            const [resolutionResult, pingResult] = await Promise.all([
+              getResolutionFromM3U8(episodeUrl, signal).catch((e) => {
+                if ((e as Error).name !== "AbortError") {
+                  logger.info(`Failed to get resolution for ${searchResult.source_name}`, e);
+                }
+                return null;
+              }),
+              pingM3U8Url(episodeUrl, signal).catch((e) => {
+                if ((e as Error).name !== "AbortError") {
+                  logger.info(`Failed to ping ${searchResult.source_name}`, e);
+                }
+                return null;
+              }),
+            ]);
+
+            resolution = resolutionResult;
+            pingTime = pingResult ?? undefined;
+
             logger.info(
-              `[INFO] Using pre-computed videoInfo for ${searchResult.source_name}: ${searchResult.videoInfo.quality}, ${searchResult.videoInfo.loadSpeed}, ${searchResult.videoInfo.pingTime}ms`,
+              `[PERF] ${searchResult.source_name}: resolution=${resolution || "failed"}, ping=${pingTime ? pingTime + "ms" : "failed"}`,
             );
-            return {
-              ...searchResult,
-              resolution: searchResult.videoInfo.quality, // 使用 videoInfo 中的质量作为分辨率
-            };
           }
 
-          // 否则进行本地分辨率检测（向后兼容）
-          let resolution;
-          const m3u8Start = performance.now();
-          try {
-            if (searchResult.episodes && searchResult.episodes.length > 0) {
-              resolution = await getResolutionFromM3U8(searchResult.episodes[0], signal);
-            }
-          } catch (e) {
-            if ((e as Error).name !== "AbortError") {
-              logger.info(`Failed to get resolution for ${searchResult.source_name}`, e);
-            }
-          }
-          const m3u8End = performance.now();
-          logger.info(
-            `[PERF] M3U8 resolution for ${searchResult.source_name}: ${(m3u8End - m3u8Start).toFixed(2)}ms (${resolution || "failed"})`,
-          );
-          return { ...searchResult, resolution };
+          return { ...searchResult, resolution, pingTime };
         }),
       );
 
@@ -198,7 +164,7 @@ const useDetailStore = create<DetailState>((set, get) => ({
             source: r.source,
             source_name: r.source_name,
             resolution: r.resolution,
-            videoInfo: r.videoInfo, // 包含完整的测速信息
+            pingTime: r.pingTime,
           })),
           detail: state.detail ?? finalResults[0] ?? null,
         };
@@ -498,33 +464,22 @@ const useDetailStore = create<DetailState>((set, get) => ({
       return null;
     }
 
-    // 智能选择最佳可用源（基于测速信息）
+    // 智能选择最佳可用源（基于分辨率和网络延迟）
     const sortedSources = availableSources.sort((a, b) => {
-      // 如果有 videoInfo，使用综合评分算法
-      if (a.videoInfo && b.videoInfo) {
-        const scoreA = calculateVideoScore(a.videoInfo);
-        const scoreB = calculateVideoScore(b.videoInfo);
-        return scoreB - scoreA; // 降序排列，最高分优先
-      }
-
-      // 如果没有 videoInfo，回退到分辨率优先级
       const aResolution = a.resolution || "";
       const bResolution = b.resolution || "";
+      const aPing = a.pingTime || 999999; // 未测速的源给很高的延迟值
+      const bPing = b.pingTime || 999999;
 
-      const resolutionPriority = (res: string) => {
-        if (res.includes("1080")) return 4;
-        if (res.includes("720")) return 3;
-        if (res.includes("480")) return 2;
-        if (res.includes("360")) return 1;
-        return 0;
-      };
+      const scoreA = calculateVideoScore(aResolution, aPing);
+      const scoreB = calculateVideoScore(bResolution, bPing);
 
-      return resolutionPriority(bResolution) - resolutionPriority(aResolution);
+      return scoreB - scoreA; // 降序排列，最高分优先
     });
 
     const selectedSource = sortedSources[0];
-    const selectionReason = selectedSource.videoInfo
-      ? `videoInfo: ${selectedSource.videoInfo.quality}, ${selectedSource.videoInfo.loadSpeed}, ${selectedSource.videoInfo.pingTime}ms`
+    const selectionReason = selectedSource.pingTime
+      ? `resolution: ${selectedSource.resolution || "unknown"}, ping: ${selectedSource.pingTime}ms`
       : `resolution: ${selectedSource.resolution || "unknown"}`;
     logger.info(
       `[SOURCE_SELECTION] Selected fallback source: ${selectedSource.source} (${selectedSource.source_name}) with ${selectionReason}`,

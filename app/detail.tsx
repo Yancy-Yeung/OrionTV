@@ -173,7 +173,7 @@ export default function DetailScreen() {
                         <Text style={dynamicStyles.badgeText}>{item.resolution}</Text>
                       </View>
                     )}
-                    {item.videoInfo && (
+                    {item.pingTime && (
                       <View
                         style={[
                           dynamicStyles.badge,
@@ -181,9 +181,7 @@ export default function DetailScreen() {
                           isSelected && dynamicStyles.selectedBadge,
                         ]}
                       >
-                        <Text style={dynamicStyles.badgeText}>
-                          {item.videoInfo.loadSpeed} • {item.videoInfo.pingTime}ms
-                        </Text>
+                        <Text style={dynamicStyles.badgeText}>{item.pingTime}ms</Text>
                       </View>
                     )}
                   </StyledButton>
@@ -275,7 +273,7 @@ export default function DetailScreen() {
                           <Text style={dynamicStyles.badgeText}>{item.resolution}</Text>
                         </View>
                       )}
-                      {item.videoInfo && (
+                      {item.pingTime && (
                         <View
                           style={[
                             dynamicStyles.badge,
@@ -283,9 +281,7 @@ export default function DetailScreen() {
                             isSelected && dynamicStyles.selectedBadge,
                           ]}
                         >
-                          <Text style={dynamicStyles.badgeText}>
-                            {item.videoInfo.loadSpeed} • {item.videoInfo.pingTime}ms
-                          </Text>
+                          <Text style={dynamicStyles.badgeText}>{item.pingTime}ms</Text>
                         </View>
                       )}
                     </StyledButton>
