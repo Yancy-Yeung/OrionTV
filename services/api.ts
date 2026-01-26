@@ -39,6 +39,12 @@ export interface SearchResult {
   year: string;
   desc?: string;
   type_name?: string;
+  // 视频测速信息（从 LunaTV API 获取）
+  videoInfo?: {
+    quality: string; // 视频质量，如 '1080p', '720p', '4K' 等
+    loadSpeed: string; // 加载速度，如 '1.2 MB/s', '500 KB/s'
+    pingTime: number; // 网络延迟（毫秒）
+  };
 }
 
 export interface Favorite {
@@ -126,7 +132,7 @@ export class API {
     const response = await this._fetch("/api/logout", {
       method: "POST",
     });
-    await AsyncStorage.setItem("authCookies", '');
+    await AsyncStorage.setItem("authCookies", "");
     return response.json();
   }
 
@@ -204,7 +210,7 @@ export class API {
     type: "movie" | "tv",
     tag: string,
     pageSize: number = 16,
-    pageStart: number = 0
+    pageStart: number = 0,
   ): Promise<DoubanResponse> {
     const url = `/api/douban?type=${type}&tag=${encodeURIComponent(tag)}&pageSize=${pageSize}&pageStart=${pageStart}`;
     const response = await this._fetch(url);
@@ -221,7 +227,7 @@ export class API {
     const url = `/api/search/one?q=${encodeURIComponent(query)}&resourceId=${encodeURIComponent(resourceId)}`;
     const response = await this._fetch(url, { signal });
     const { results } = await response.json();
-    return { results: results.filter((item: any) => item.title === query )};
+    return { results: results.filter((item: any) => item.title === query) };
   }
 
   async getResources(signal?: AbortSignal): Promise<ApiSite[]> {

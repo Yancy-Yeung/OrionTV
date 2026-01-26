@@ -71,7 +71,7 @@ export default function DetailScreen() {
       </ThemedView>
     );
 
-    if (deviceType === 'tv') {
+    if (deviceType === "tv") {
       return content;
     }
 
@@ -90,7 +90,7 @@ export default function DetailScreen() {
       </ThemedView>
     );
 
-    if (deviceType === 'tv') {
+    if (deviceType === "tv") {
       return content;
     }
 
@@ -106,7 +106,7 @@ export default function DetailScreen() {
   const dynamicStyles = createResponsiveStyles(deviceType, spacing);
 
   const renderDetailContent = () => {
-    if (deviceType === 'mobile') {
+    if (deviceType === "mobile") {
       // 移动端垂直布局
       return (
         <ScrollView style={dynamicStyles.scrollContainer}>
@@ -163,8 +163,27 @@ export default function DetailScreen() {
                       </View>
                     )}
                     {item.resolution && (
-                      <View style={[dynamicStyles.badge, { backgroundColor: "#666" }, isSelected && dynamicStyles.selectedBadge]}>
+                      <View
+                        style={[
+                          dynamicStyles.badge,
+                          { backgroundColor: "#666" },
+                          isSelected && dynamicStyles.selectedBadge,
+                        ]}
+                      >
                         <Text style={dynamicStyles.badgeText}>{item.resolution}</Text>
+                      </View>
+                    )}
+                    {item.videoInfo && (
+                      <View
+                        style={[
+                          dynamicStyles.badge,
+                          { backgroundColor: "#007AFF" },
+                          isSelected && dynamicStyles.selectedBadge,
+                        ]}
+                      >
+                        <Text style={dynamicStyles.badgeText}>
+                          {item.videoInfo.loadSpeed} • {item.videoInfo.pingTime}ms
+                        </Text>
                       </View>
                     )}
                   </StyledButton>
@@ -246,8 +265,27 @@ export default function DetailScreen() {
                         </View>
                       )}
                       {item.resolution && (
-                        <View style={[dynamicStyles.badge, { backgroundColor: "#666" }, isSelected && dynamicStyles.selectedBadge]}>
+                        <View
+                          style={[
+                            dynamicStyles.badge,
+                            { backgroundColor: "#666" },
+                            isSelected && dynamicStyles.selectedBadge,
+                          ]}
+                        >
                           <Text style={dynamicStyles.badgeText}>{item.resolution}</Text>
+                        </View>
+                      )}
+                      {item.videoInfo && (
+                        <View
+                          style={[
+                            dynamicStyles.badge,
+                            { backgroundColor: "#007AFF" },
+                            isSelected && dynamicStyles.selectedBadge,
+                          ]}
+                        >
+                          <Text style={dynamicStyles.badgeText}>
+                            {item.videoInfo.loadSpeed} • {item.videoInfo.pingTime}ms
+                          </Text>
                         </View>
                       )}
                     </StyledButton>
@@ -276,13 +314,13 @@ export default function DetailScreen() {
   };
 
   const content = (
-    <ThemedView style={[commonStyles.container, { paddingTop: deviceType === 'tv' ? 40 : 0 }]}>
+    <ThemedView style={[commonStyles.container, { paddingTop: deviceType === "tv" ? 40 : 0 }]}>
       {renderDetailContent()}
     </ThemedView>
   );
 
   // 根据设备类型决定是否包装在响应式导航中
-  if (deviceType === 'tv') {
+  if (deviceType === "tv") {
     return content;
   }
 
@@ -295,15 +333,15 @@ export default function DetailScreen() {
 }
 
 const createResponsiveStyles = (deviceType: string, spacing: number) => {
-  const isTV = deviceType === 'tv';
-  const isTablet = deviceType === 'tablet';
-  const isMobile = deviceType === 'mobile';
+  const isTV = deviceType === "tv";
+  const isTablet = deviceType === "tablet";
+  const isMobile = deviceType === "mobile";
 
   return StyleSheet.create({
     scrollContainer: {
       flex: 1,
     },
-    
+
     // 移动端专用样式
     mobileTopContainer: {
       paddingHorizontal: spacing,
@@ -311,10 +349,10 @@ const createResponsiveStyles = (deviceType: string, spacing: number) => {
       paddingBottom: spacing / 2,
     },
     mobilePoster: {
-      width: '100%',
+      width: "100%",
       height: 280,
       borderRadius: 8,
-      alignSelf: 'center',
+      alignSelf: "center",
       marginBottom: spacing,
     },
     mobileInfoContainer: {
@@ -355,7 +393,7 @@ const createResponsiveStyles = (deviceType: string, spacing: number) => {
       fontSize: isMobile ? 20 : isTablet ? 24 : 28,
       fontWeight: "bold",
       flexShrink: 1,
-      color: 'white',
+      color: "white",
     },
     favoriteButton: {
       padding: 10,
@@ -392,7 +430,7 @@ const createResponsiveStyles = (deviceType: string, spacing: number) => {
     sourcesTitle: {
       fontSize: isMobile ? 16 : isTablet ? 18 : 20,
       fontWeight: "bold",
-      color: 'white',
+      color: "white",
     },
     sourceList: {
       flexDirection: "row",
@@ -431,7 +469,7 @@ const createResponsiveStyles = (deviceType: string, spacing: number) => {
       fontSize: isMobile ? 16 : isTablet ? 18 : 20,
       fontWeight: "bold",
       marginBottom: spacing / 2,
-      color: 'white',
+      color: "white",
     },
     episodeList: {
       flexDirection: "row",
