@@ -45,6 +45,7 @@ const calculateVideoScore = (resolution: string, pingTime: number): number => {
 export type SearchResultWithResolution = SearchResult & {
   resolution?: string | null;
   pingTime?: number; // 网络延迟（毫秒）
+  score?: number; // 综合评分（0-100）
 };
 
 interface DetailState {
@@ -55,6 +56,7 @@ interface DetailState {
     source_name: string;
     resolution: string | null | undefined;
     pingTime?: number; // 网络延迟（毫秒）
+    score?: number; // 综合评分（0-100）
   }[];
   detail: SearchResultWithResolution | null;
   loading: boolean;
@@ -139,12 +141,15 @@ const useDetailStore = create<DetailState>((set, get) => ({
             resolution = resolutionResult;
             pingTime = pingResult ?? undefined;
 
+            // 计算综合评分
+            const score = resolution && pingTime ? calculateVideoScore(resolution, pingTime) : undefined;
+
             logger.info(
-              `[PERF] ${searchResult.source_name}: resolution=${resolution || "failed"}, ping=${pingTime ? pingTime + "ms" : "failed"}`,
+              `[PERF] ${searchResult.source_name}: resolution=${resolution || "failed"}, ping=${pingTime ? pingTime + "ms" : "failed"}, score=${score || "N/A"}`,
             );
           }
 
-          return { ...searchResult, resolution, pingTime };
+          return { ...searchResult, resolution, pingTime, score };
         }),
       );
 
@@ -165,6 +170,7 @@ const useDetailStore = create<DetailState>((set, get) => ({
             source_name: r.source_name,
             resolution: r.resolution,
             pingTime: r.pingTime,
+            score: r.score,
           })),
           detail: state.detail ?? finalResults[0] ?? null,
         };
