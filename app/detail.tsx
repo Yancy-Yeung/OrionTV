@@ -292,7 +292,7 @@ export default function DetailScreen() {
                             isSelected && dynamicStyles.selectedBadge,
                           ]}
                         >
-                          <Text style={dynamicStyles.badgeText}>{Math.round(item.score)}分</Text>
+                          <Text style={dynamicStyles.badgeText}>{Math.round(item.score)}pt</Text>
                         </View>
                       )}
                     </StyledButton>

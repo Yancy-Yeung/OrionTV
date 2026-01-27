@@ -142,8 +142,10 @@ const useDetailStore = create<DetailState>((set, get) => ({
             resolution = resolutionResult;
             pingTime = pingResult ?? undefined;
 
-            // 计算综合评分
-            score = resolution && pingTime ? calculateVideoScore(resolution, pingTime) : undefined;
+            // 计算综合评分（只要有分辨率或ping时间就计算）
+            if (resolution || pingTime) {
+              score = calculateVideoScore(resolution || "", pingTime || 0);
+            }
 
             logger.info(
               `[PERF] ${searchResult.source_name}: resolution=${resolution || "failed"}, ping=${pingTime ? pingTime + "ms" : "failed"}, score=${score || "N/A"}`,
