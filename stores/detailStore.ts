@@ -118,6 +118,7 @@ const useDetailStore = create<DetailState>((set, get) => ({
           // 进行客户端分辨率检测和网络延迟测试
           let resolution: string | null = null;
           let pingTime: number | undefined = undefined;
+          let score: number | undefined = undefined;
 
           if (searchResult.episodes && searchResult.episodes.length > 0) {
             const episodeUrl = searchResult.episodes[0];
@@ -142,7 +143,7 @@ const useDetailStore = create<DetailState>((set, get) => ({
             pingTime = pingResult ?? undefined;
 
             // 计算综合评分
-            const score = resolution && pingTime ? calculateVideoScore(resolution, pingTime) : undefined;
+            score = resolution && pingTime ? calculateVideoScore(resolution, pingTime) : undefined;
 
             logger.info(
               `[PERF] ${searchResult.source_name}: resolution=${resolution || "failed"}, ping=${pingTime ? pingTime + "ms" : "failed"}, score=${score || "N/A"}`,
