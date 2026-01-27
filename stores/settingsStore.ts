@@ -46,7 +46,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   loadSettings: async () => {
     const settings = await SettingsManager.get();
     set({
-      apiBaseUrl: settings.apiBaseUrl || "https://tv.kelvin.dpdns.org",
+      apiBaseUrl: settings.apiBaseUrl,
       m3uUrl: settings.m3uUrl,
       remoteInputEnabled: settings.remoteInputEnabled || false,
       videoSource: settings.videoSource || {

@@ -1,9 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api, PlayRecord as ApiPlayRecord, Favorite as ApiFavorite } from "./api";
 import { storageConfig } from "./storageConfig";
-import Logger from '@/utils/Logger';
+import Logger from "@/utils/Logger";
 
-const logger = Logger.withTag('Storage');
+const logger = Logger.withTag("Storage");
 
 // --- Storage Keys ---
 const STORAGE_KEYS = {
@@ -64,13 +64,15 @@ export class PlayerSettingsManager {
   static async get(source: string, id: string): Promise<PlayerSettings | null> {
     const perfStart = performance.now();
     logger.info(`[PERF] PlayerSettingsManager.get START - source: ${source}, id: ${id}`);
-    
+
     const allSettings = await this.getAll();
     const result = allSettings[generateKey(source, id)] || null;
-    
+
     const perfEnd = performance.now();
-    logger.info(`[PERF] PlayerSettingsManager.get END - took ${(perfEnd - perfStart).toFixed(2)}ms, found: ${!!result}`);
-    
+    logger.info(
+      `[PERF] PlayerSettingsManager.get END - took ${(perfEnd - perfStart).toFixed(2)}ms, found: ${!!result}`,
+    );
+
     return result;
   }
 
@@ -78,7 +80,11 @@ export class PlayerSettingsManager {
     const allSettings = await this.getAll();
     const key = generateKey(source, id);
     // Only save if there are actual values to save
-    if (settings.introEndTime !== undefined || settings.outroStartTime !== undefined || settings.playbackRate !== undefined) {
+    if (
+      settings.introEndTime !== undefined ||
+      settings.outroStartTime !== undefined ||
+      settings.playbackRate !== undefined
+    ) {
       allSettings[key] = { ...allSettings[key], ...settings };
     } else {
       // If all are undefined, remove the key
@@ -179,7 +185,7 @@ export class PlayRecordManager {
     const perfStart = performance.now();
     const storageType = this.getStorageType();
     logger.info(`[PERF] PlayRecordManager.getAll START - storageType: ${storageType}`);
-    
+
     let apiRecords: Record<string, PlayRecord> = {};
     if (storageType === "localstorage") {
       try {
@@ -192,11 +198,13 @@ export class PlayRecordManager {
     } else {
       const apiStart = performance.now();
       logger.info(`[PERF] API getPlayRecords START`);
-      
+
       apiRecords = await api.getPlayRecords();
-      
+
       const apiEnd = performance.now();
-      logger.info(`[PERF] API getPlayRecords END - took ${(apiEnd - apiStart).toFixed(2)}ms, records: ${Object.keys(apiRecords).length}`);
+      logger.info(
+        `[PERF] API getPlayRecords END - took ${(apiEnd - apiStart).toFixed(2)}ms, records: ${Object.keys(apiRecords).length}`,
+      );
     }
 
     const localSettings = await PlayerSettingsManager.getAll();
@@ -207,10 +215,12 @@ export class PlayRecordManager {
         ...localSettings[key],
       };
     }
-    
+
     const perfEnd = performance.now();
-    logger.info(`[PERF] PlayRecordManager.getAll END - took ${(perfEnd - perfStart).toFixed(2)}ms, total records: ${Object.keys(mergedRecords).length}`);
-    
+    logger.info(
+      `[PERF] PlayRecordManager.getAll END - took ${(perfEnd - perfStart).toFixed(2)}ms, total records: ${Object.keys(mergedRecords).length}`,
+    );
+
     return mergedRecords;
   }
 
@@ -236,13 +246,13 @@ export class PlayRecordManager {
     const key = generateKey(source, id);
     const storageType = this.getStorageType();
     logger.info(`[PERF] PlayRecordManager.get START - source: ${source}, id: ${id}, storageType: ${storageType}`);
-    
+
     const records = await this.getAll();
     const result = records[key] || null;
-    
+
     const perfEnd = performance.now();
     logger.info(`[PERF] PlayRecordManager.get END - took ${(perfEnd - perfStart).toFixed(2)}ms, found: ${!!result}`);
-    
+
     return result;
   }
 
@@ -315,7 +325,7 @@ export class SearchHistoryManager {
 export class SettingsManager {
   static async get(): Promise<AppSettings> {
     const defaultSettings: AppSettings = {
-      apiBaseUrl: "",
+      apiBaseUrl: "https://tv.kelvin.dpdns.org",
       remoteInputEnabled: true,
       videoSource: {
         enabledAll: true,
