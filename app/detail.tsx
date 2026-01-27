@@ -184,6 +184,17 @@ export default function DetailScreen() {
                         <Text style={dynamicStyles.badgeText}>{item.pingTime}ms</Text>
                       </View>
                     )}
+                    {item.score && (
+                      <View
+                        style={[
+                          dynamicStyles.badge,
+                          { backgroundColor: "#10B981" },
+                          isSelected && dynamicStyles.selectedBadge,
+                        ]}
+                      >
+                        <Text style={dynamicStyles.badgeText}>{Math.round(item.score)}pt</Text>
+                      </View>
+                    )}
                   </StyledButton>
                 );
               })}
