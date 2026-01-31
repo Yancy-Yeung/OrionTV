@@ -29,9 +29,14 @@ export interface Category {
 const initialCategories: Category[] = [
   { title: "电视剧", type: "tv", tags: ["国产剧", "日本动画", "美剧", "韩剧", "日剧", "港剧", "英剧"] },
   {
-    title: "电影",
+    title: "电影分类",
     type: "movie",
-    tags: ["最新", "印度", "韩国", "欧美", "日本", "动作", "喜剧", "科幻", "悬疑", "惊悚", "恐怖"],
+    tags: ["最新", "动画", "惊悚", "悬疑", "科幻", "动作", "喜剧", "爱情", "文艺"],
+  },
+  {
+    title: "各国电影",
+    type: "movie",
+    tags: ["热门", "欧美", "韩国", "印度", "大陆", "香港", "日本", "泰国", "台湾"],
   },
   { title: "热门剧集", type: "tv", tag: "热门" },
   { title: "豆瓣 Top250", type: "movie", tag: "top250" },
@@ -310,7 +315,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
     set((state) => {
       const recordCategoryExists = state.categories.some((c) => c.type === "record");
       if (hasRecords && !recordCategoryExists) {
-        return { categories: [...state.categories, initialCategories[5]] };
+        return { categories: [...state.categories, initialCategories[6]] };
       }
       if (!hasRecords && recordCategoryExists) {
         const newCategories = state.categories.filter((c) => c.type !== "record");
