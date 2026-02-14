@@ -29,6 +29,7 @@ interface SettingsState {
   setVideoSource: (config: { enabledAll: boolean; sources: { [key: string]: boolean } }) => void;
   showModal: () => void;
   hideModal: () => void;
+  setServerConfig: (config: ServerConfig | null) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -53,6 +54,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         enabledAll: true,
         sources: {},
       },
+      serverConfig: settings.serverConfig || null,
     });
     if (settings.apiBaseUrl) {
       api.setBaseUrl(settings.apiBaseUrl);
@@ -74,12 +76,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({ isLoadingServerConfig: false });
     }
   },
-  setApiBaseUrl: (url) => set({ apiBaseUrl: url }),
+  setApiBaseUrl: (url) => set({ apiBaseUrl: url, serverConfig: null }),
   setM3uUrl: (url) => set({ m3uUrl: url }),
   setRemoteInputEnabled: (enabled) => set({ remoteInputEnabled: enabled }),
   setVideoSource: (config) => set({ videoSource: config }),
   saveSettings: async () => {
-    const { apiBaseUrl, m3uUrl, remoteInputEnabled, videoSource } = get();
+    const { apiBaseUrl, m3uUrl, remoteInputEnabled, videoSource, serverConfig } = get();
     const currentSettings = await SettingsManager.get();
     const currentApiBaseUrl = currentSettings.apiBaseUrl;
     let processedApiBaseUrl = apiBaseUrl.trim();
@@ -106,6 +108,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       m3uUrl,
       remoteInputEnabled,
       videoSource,
+      serverConfig,
     });
     if (currentApiBaseUrl !== processedApiBaseUrl) {
       await AsyncStorage.setItem("authCookies", "");
@@ -117,4 +120,5 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   showModal: () => set({ isModalVisible: true }),
   hideModal: () => set({ isModalVisible: false }),
+  setServerConfig: (config) => set({ serverConfig: config }),
 }));

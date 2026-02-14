@@ -11,7 +11,7 @@ export interface ApiConfigStatus {
 }
 
 export const useApiConfig = () => {
-  const { apiBaseUrl, serverConfig, isLoadingServerConfig } = useSettingsStore();
+  const { apiBaseUrl, serverConfig, isLoadingServerConfig, setServerConfig } = useSettingsStore();
   const lastValidatedBaseUrlRef = useRef<string | null>(null);
   const [validationState, setValidationState] = useState<{
     isValidating: boolean;
@@ -37,8 +37,18 @@ export const useApiConfig = () => {
       return;
     }
 
-    const shouldValidate =
-      !serverConfig || !lastValidatedBaseUrlRef.current || lastValidatedBaseUrlRef.current !== apiBaseUrl;
+    // If serverConfig exists, consider it valid
+    if (serverConfig) {
+      setValidationState({
+        isValidating: false,
+        isValid: true,
+        error: null,
+      });
+      lastValidatedBaseUrlRef.current = apiBaseUrl;
+      return;
+    }
+
+    const shouldValidate = !lastValidatedBaseUrlRef.current || lastValidatedBaseUrlRef.current !== apiBaseUrl;
 
     if (!shouldValidate) {
       return;
@@ -48,12 +58,13 @@ export const useApiConfig = () => {
       setValidationState((prev) => ({ ...prev, isValidating: true, error: null }));
 
       try {
-        await api.getServerConfig();
+        const config = await api.getServerConfig();
         setValidationState({
           isValidating: false,
           isValid: true,
           error: null,
         });
+        setServerConfig(config);
         lastValidatedBaseUrlRef.current = apiBaseUrl;
       } catch (error) {
         let errorMessage = "服务器连接失败";
@@ -85,6 +96,7 @@ export const useApiConfig = () => {
           isValid: false,
           error: errorMessage,
         });
+        setServerConfig(null);
         lastValidatedBaseUrlRef.current = apiBaseUrl;
       }
     };

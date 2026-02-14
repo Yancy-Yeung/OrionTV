@@ -39,6 +39,10 @@ export interface AppSettings {
     };
   };
   m3uUrl: string;
+  serverConfig?: {
+    appVersion: string;
+    apiVersion: string;
+  } | null;
 }
 
 export interface LoginCredentials {

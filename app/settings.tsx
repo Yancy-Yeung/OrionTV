@@ -20,7 +20,7 @@ import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { DeviceUtils } from "@/utils/DeviceUtils";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type SectionItem = {
   component: React.ReactElement;
@@ -28,9 +28,7 @@ type SectionItem = {
 };
 
 /** 过滤掉 false/undefined，帮 TypeScript 推断出真正的数组元素类型 */
-function isSectionItem(
-  item: false | undefined | SectionItem
-): item is SectionItem {
+function isSectionItem(item: false | undefined | SectionItem): item is SectionItem {
   return !!item;
 }
 
@@ -99,65 +97,6 @@ export default function SettingsScreen() {
     setHasChanges(true);
   };
 
-  // const sections = [
-  //   // 远程输入配置 - 仅在非手机端显示
-  //   deviceType !== "mobile" && {
-  //     component: (
-  //       <RemoteInputSection
-  //         onChanged={markAsChanged}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(0);
-  //           setCurrentSection("remote");
-  //         }}
-  //       />
-  //     ),
-  //     key: "remote",
-  //   },
-  //   {
-  //     component: (
-  //       <APIConfigSection
-  //         ref={apiSectionRef}
-  //         onChanged={markAsChanged}
-  //         hideDescription={deviceType === "mobile"}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(1);
-  //           setCurrentSection("api");
-  //         }}
-  //       />
-  //     ),
-  //     key: "api",
-  //   },
-  //   // 直播源配置 - 仅在非手机端显示
-  //   deviceType !== "mobile" && {
-  //     component: (
-  //       <LiveStreamSection
-  //         ref={liveStreamSectionRef}
-  //         onChanged={markAsChanged}
-  //         onFocus={() => {
-  //           setCurrentFocusIndex(2);
-  //           setCurrentSection("livestream");
-  //         }}
-  //       />
-  //     ),
-  //     key: "livestream",
-  //   },
-  //   // {
-  //   //   component: (
-  //   //     <VideoSourceSection
-  //   //       onChanged={markAsChanged}
-  //   //       onFocus={() => {
-  //   //         setCurrentFocusIndex(3);
-  //   //         setCurrentSection("videoSource");
-  //   //       }}
-  //   //     />
-  //   //   ),
-  //   //   key: "videoSource",
-  //   // },
-  //   Platform.OS === "android" && {
-  //     component: <UpdateSection />,
-  //     key: "update",
-  //   },
-  // ].filter(Boolean);
   const rawSections = [
     deviceType !== "mobile" && {
       component: (
@@ -206,7 +145,6 @@ export default function SettingsScreen() {
   /** 这里得到的 sections 已经是 SectionItem[]（没有 false） */
   const sections: SectionItem[] = rawSections.filter(isSectionItem);
 
-
   // TV遥控器事件处理 - 仅在TV设备上启用
   const handleTVEvent = React.useCallback(
     (event: any) => {
@@ -223,10 +161,10 @@ export default function SettingsScreen() {
         setCurrentFocusIndex(prevIndex);
       }
     },
-    [currentFocusIndex, sections.length, deviceType]
+    [currentFocusIndex, sections.length, deviceType],
   );
 
-  useTVEventHandler(deviceType === "tv" ? handleTVEvent : () => { });
+  useTVEventHandler(deviceType === "tv" ? handleTVEvent : () => {});
 
   // 动态样式
   const dynamicStyles = createResponsiveStyles(deviceType, spacing, insets);
@@ -241,7 +179,6 @@ export default function SettingsScreen() {
       scrollEnabled={true}
       style={{ flex: 1, backgroundColor }}
     >
-
       <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
         {deviceType === "tv" && (
           <View style={dynamicStyles.header}>
@@ -264,7 +201,7 @@ export default function SettingsScreen() {
           />
         </View> */}
         <View style={dynamicStyles.scrollView}>
-          {sections.map(item => (
+          {sections.map((item) => (
             // 必须把 key 放在最外层的 View 上
             <View key={item.key} style={dynamicStyles.itemWrapper}>
               {item.component}
@@ -342,7 +279,7 @@ const createResponsiveStyles = (deviceType: string, spacing: number, insets: any
       opacity: 0.5,
     },
     itemWrapper: {
-      marginBottom: spacing,   // 这里的 spacing 来自 useResponsiveLayout()
+      marginBottom: spacing, // 这里的 spacing 来自 useResponsiveLayout()
     },
   });
 };
