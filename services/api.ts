@@ -87,6 +87,8 @@ export class API {
   constructor(baseURL?: string) {
     if (baseURL) {
       this.baseURL = baseURL;
+    } else {
+      this.baseURL = "https://tv.kelvin.dpdns.org"; // 默认值，实际使用时请根据需要修改
     }
   }
 
