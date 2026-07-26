@@ -178,7 +178,6 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
         })}
         estimatedItemSize={itemHeight}
         ListFooterComponent={renderFooter()}
-        removeClippedSubviews={true}
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={5}
