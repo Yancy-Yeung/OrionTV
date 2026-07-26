@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { ThemedText } from '@/components/ThemedText';
 import { StyledButton } from '@/components/StyledButton';
@@ -47,7 +47,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   return (
     <View style={styles.container}>
       {/* 侧边栏容器 - 添加 onFocus 实现自动展开 */}
-      <View
+      <Pressable
         style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}
         onFocus={handleSidebarFocus}
       >
@@ -64,8 +64,8 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
         <View style={styles.sidebarContent}>
           {sidebarContent}
         </View>
-      </View>
-      <View style={styles.mainContent} onFocus={handleMainContentFocus}>{children}</View>
+      </Pressable>
+      <Pressable style={styles.mainContent} onFocus={handleMainContentFocus}>{children}</Pressable>
     </View>
   );
 };
