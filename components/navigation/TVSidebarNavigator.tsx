@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { ThemedText } from '@/components/ThemedText';
 import { StyledButton } from '@/components/StyledButton';
@@ -10,7 +10,6 @@ interface TVSidebarNavigatorProps {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   sidebarTitle?: string;
-  handleMainContentFocus?: () => void;
 }
 
 const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
@@ -19,7 +18,6 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   collapsed: controlledCollapsed,
   onCollapsedChange,
   sidebarTitle = '菜单',
-  handleMainContentFocus,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
@@ -35,21 +33,13 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
     }
   };
 
-  // 当焦点进入侧边栏区域时自动展开（解决折叠后焦点死锁问题）
-  const handleSidebarFocus = useCallback(() => {
-    if (collapsed) {
-      setCollapsed(false);
-    }
-  }, [collapsed, setCollapsed]);
-
   const styles = createStyles(spacing, collapsed);
 
   return (
     <View style={styles.container}>
-      {/* 侧边栏容器 - 添加 onFocus 实现自动展开 */}
-      <Pressable
+      {/* 侧边栏容器 - 使用 View 避免嵌套 Pressable 焦点冲突 */}
+      <View
         style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}
-        onFocus={handleSidebarFocus}
       >
         <View style={styles.sidebarHeader}>
           {!collapsed && <ThemedText style={styles.sidebarTitle}>{sidebarTitle}</ThemedText>}
@@ -64,8 +54,11 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
         <View style={styles.sidebarContent}>
           {sidebarContent}
         </View>
-      </Pressable>
-      <View style={styles.mainContent}>{children}</View>
+      </View>
+      {/* 主内容区 - focusable 确保焦点系统有安全的落点 */}
+      <View style={styles.mainContent} focusable={true}>
+        {children}
+      </View>
     </View>
   );
 };

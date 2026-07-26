@@ -177,10 +177,6 @@ export default function HomeScreen() {
     focusSelectedSidebarItem();
   }, [focusSelectedSidebarItem]);
 
-  const handleMainContentFocus = useCallback(() => {
-    setSidebarCollapsed(true);
-  }, []);
-
   // 二级菜单紧跟在一级分类下面，选中时展开标签组
   const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
@@ -192,7 +188,7 @@ export default function HomeScreen() {
       <View>
         <StyledButton
           ref={getSidebarItemRef(`category-${item.title}`)}
-          hasTVPreferredFocus={categoryHasPreferredFocus || initialCategoryFocus}
+          hasTVPreferredFocus={!sidebarCollapsed && (categoryHasPreferredFocus || initialCategoryFocus)}
           text={sidebarCollapsed ? item.title.charAt(0) : item.title}
           onPress={() => handleCategorySelect(item)}
           onFocus={handleSidebarFocus}
@@ -255,7 +251,6 @@ export default function HomeScreen() {
       totalEpisodes={item.totalEpisodes}
       api={api}
       onRecordDeleted={fetchInitialData}
-      hasTVPreferredFocus={deviceType === 'tv' && sidebarCollapsed && index === lastFocusedCardIndex}
       onFocus={() => {
         setSidebarCollapsed(true);
         setLastFocusedCardIndex(index);
@@ -502,7 +497,6 @@ export default function HomeScreen() {
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           sidebarContent={tvSidebarContent}
-          handleMainContentFocus={handleMainContentFocus}
         >
           {renderHeader()}
           {shouldShowApiConfig ? (
