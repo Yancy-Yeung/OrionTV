@@ -21,10 +21,11 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   sidebarTitle = '菜单',
   handleMainContentFocus,
 }) => {
-  const { spacing } = useResponsiveLayout();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
   const collapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const { spacing } = useResponsiveLayout(collapsed);
 
   const setCollapsed = (value: boolean) => {
     if (onCollapsedChange) {
@@ -65,7 +66,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
           {sidebarContent}
         </ScrollView>
       </View>
-      <View style={styles.mainContent} onFocus={handleMainContentFocus}>{children}</View>
+      <View style={styles.mainContent} focusable={true} onFocus={handleMainContentFocus}>{children}</View>
     </View>
   );
 };
