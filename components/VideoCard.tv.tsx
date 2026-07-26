@@ -44,6 +44,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      ...rest
     }: VideoCardProps,
     ref
   ) => {

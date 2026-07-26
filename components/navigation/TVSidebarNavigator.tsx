@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { ThemedText } from '@/components/ThemedText';
 import { StyledButton } from '@/components/StyledButton';
@@ -61,9 +61,9 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
             textStyle={styles.toggleText}
           />
         </View>
-        <ScrollView style={styles.sidebarContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.sidebarContent}>
           {sidebarContent}
-        </ScrollView>
+        </View>
       </View>
       <View style={styles.mainContent} onFocus={handleMainContentFocus}>{children}</View>
     </View>
