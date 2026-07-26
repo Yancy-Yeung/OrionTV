@@ -156,6 +156,10 @@ export default function HomeScreen() {
     setSidebarCollapsed(false);
   }, []);
 
+  const handleMainContentFocus = useCallback(() => {
+    setSidebarCollapsed(true);
+  }, []);
+
   // 二级菜单紧跟在一级分类下面，选中时展开标签组
   const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
@@ -468,6 +472,7 @@ export default function HomeScreen() {
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           sidebarContent={tvSidebarContent}
+          handleMainContentFocus={handleMainContentFocus}
         >
           {renderHeader()}
           {shouldShowApiConfig ? (

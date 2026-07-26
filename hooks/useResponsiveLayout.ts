@@ -32,7 +32,8 @@ const getLayoutConfig = (
   deviceType: DeviceType,
   width: number,
   height: number,
-  isPortrait: boolean
+  isPortrait: boolean,
+  sidebarCollapsed: boolean
 ): ResponsiveConfig => {
   const spacing = deviceType === "mobile" ? 8 : deviceType === "tablet" ? 12 : 16;
 
@@ -97,7 +98,7 @@ export const useResponsiveLayout = (sidebarCollapsed: boolean = false): Responsi
   const isPortrait = height > width;
   const deviceType = getDeviceType(width);
 
-  return getLayoutConfig(deviceType, width, height, isPortrait);
+  return getLayoutConfig(deviceType, width, height, isPortrait, sidebarCollapsed);
 };
 
 // Utility hook for responsive values
