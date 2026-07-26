@@ -144,6 +144,23 @@ export class API {
     return response.json();
   }
 
+  // Silent re-login using saved credentials
+  async reLogin(username: string, password: string): Promise<{ ok: boolean }> {
+    const response = await this._fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    // Store the new cookies
+    const cookies = response.headers.get("Set-Cookie");
+    if (cookies) {
+      await AsyncStorage.setItem("authCookies", cookies);
+    }
+
+    return response.json();
+  }
+
   async logout(): Promise<{ ok: boolean }> {
     const response = await this._fetch("/api/logout", {
       method: "POST",

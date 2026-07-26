@@ -4,6 +4,7 @@ import { api } from "@/services/api";
 import { useSettingsStore } from "./settingsStore";
 import Toast from "react-native-toast-message";
 import Logger from "@/utils/Logger";
+import { LoginCredentialsManager } from "@/services/storage";
 
 const logger = Logger.withTag('AuthStore');
 
@@ -19,11 +20,20 @@ interface AuthState {
 const useAuthStore = create<AuthState>((set) => ({
   isLoggedIn: false,
   isLoginModalVisible: false,
+  _isCheckingLogin: false, // internal flag to prevent concurrent checkLoginStatus calls
   showLoginModal: () => set({ isLoginModalVisible: true }),
   hideLoginModal: () => set({ isLoginModalVisible: false }),
-  checkLoginStatus: async (apiBaseUrl?: string) => {
+  checkLoginStatus: async (apiBaseUrl?: string, skipAutoLogin: boolean = false) => {
+    // Prevent concurrent calls
+    const currentState = useAuthStore.getState();
+    if (currentState._isCheckingLogin) {
+      logger.info('checkLoginStatus already in progress, skipping');
+      return;
+    }
+    set({ _isCheckingLogin: true });
+
     if (!apiBaseUrl) {
-      set({ isLoggedIn: false, isLoginModalVisible: false });
+      set({ isLoggedIn: false, isLoginModalVisible: false, _isCheckingLogin: false });
       return;
     }
     try {
@@ -59,12 +69,29 @@ const useAuthStore = create<AuthState>((set) => ({
 
       const authToken = await AsyncStorage.getItem('authCookies');
       if (!authToken) {
-        if (serverConfig && serverConfig.StorageType === "localstorage") {
-          const loginResult = await api.login().catch(() => {
+        // skipAutoLogin=true means this is called after a manual login attempt,
+        // so we should NOT attempt silent auto-login
+        if (!skipAutoLogin) {
+          // Try to auto re-login with saved credentials
+          const savedCredentials = await LoginCredentialsManager.get();
+          if (savedCredentials) {
+            try {
+              const loginResult = await api.reLogin(savedCredentials.username, savedCredentials.password);
+              if (loginResult && loginResult.ok) {
+                set({ isLoggedIn: true, isLoginModalVisible: false });
+              } else {
+                // Re-login failed, clear saved credentials and show login modal
+                await LoginCredentialsManager.clear();
+                set({ isLoggedIn: false, isLoginModalVisible: true });
+              }
+            } catch (error) {
+              logger.error("Auto re-login failed:", error);
+              await LoginCredentialsManager.clear();
+              set({ isLoggedIn: false, isLoginModalVisible: true });
+            }
+          } else {
+            // No saved credentials, show login modal
             set({ isLoggedIn: false, isLoginModalVisible: true });
-          });
-          if (loginResult && loginResult.ok) {
-            set({ isLoggedIn: true });
           }
         } else {
           set({ isLoggedIn: false, isLoginModalVisible: true });
@@ -79,11 +106,15 @@ const useAuthStore = create<AuthState>((set) => ({
       } else {
         set({ isLoggedIn: false });
       }
+    } finally {
+      set({ _isCheckingLogin: false });
     }
   },
   logout: async () => {
     try {
       await api.logout();
+      // Clear saved credentials on manual logout
+      await LoginCredentialsManager.clear();
       set({ isLoggedIn: false, isLoginModalVisible: true });
     } catch (error) {
       logger.error("Failed to logout:", error);

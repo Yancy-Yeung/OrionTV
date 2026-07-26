@@ -96,7 +96,8 @@ const LoginModal = () => {
     setIsLoading(true);
     try {
       await api.login(isLocalStorage ? undefined : username, password);
-      await checkLoginStatus(apiBaseUrl);
+      // skipAutoLogin=true: prevent silent auto-login race condition after manual login
+      await checkLoginStatus(apiBaseUrl, true);
       await refreshPlayRecords();
 
       // Save credentials on successful login
@@ -130,6 +131,8 @@ const LoginModal = () => {
       // 使用 InteractionManager 确保 UI 稳定后再执行
       InteractionManager.runAfterInteractions(hideAndAlert);
     } catch (error) {
+      // Clear saved credentials on login failure so user can retry
+      await LoginCredentialsManager.clear();
       Toast.show({
         type: "error",
         text1: "登录失败",
