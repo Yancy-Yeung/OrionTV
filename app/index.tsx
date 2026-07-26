@@ -201,6 +201,11 @@ export default function HomeScreen() {
     }
   }, [sidebarFocusEnabled]);
 
+  useEffect(() => {
+    if (tvFocusRegion === 'sidebar') {
+      setSidebarCollapsed(false);
+    }
+  }, [tvFocusRegion]);
 
   // 从详情页返回时：保持 FlatList 挂载，只恢复焦点和滚动位置
   lastFocusedCardIndexRef.current = lastFocusedCardIndex;
@@ -436,11 +441,12 @@ export default function HomeScreen() {
       justifyContent: "center",
       alignItems: "flex-start",
       paddingVertical: spacing * 0.75,
+      paddingHorizontal: spacing / 2,
       borderRadius: 10,
     },
     tvSidebarItemCollapsed: {
       alignItems: "center",
-      paddingHorizontal: 0,
+      paddingHorizontal: spacing / 2,
     },
     tvSidebarItemCollapseText: {
       fontSize: 18,
@@ -576,6 +582,11 @@ export default function HomeScreen() {
         <TVSidebarNavigator
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
+          onToggleFocus={() => {
+            if (sidebarFocusEnabled) {
+              setSidebarCollapsed(false);
+            }
+          }}
           sidebarContent={tvSidebarContent}
           sidebarFocusable={sidebarFocusEnabled}
         >

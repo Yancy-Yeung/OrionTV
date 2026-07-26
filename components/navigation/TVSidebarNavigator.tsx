@@ -9,6 +9,7 @@ interface TVSidebarNavigatorProps {
   sidebarContent: React.ReactNode;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  onToggleFocus?: () => void;
   sidebarTitle?: string;
   sidebarFocusable?: boolean;
 }
@@ -18,6 +19,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   sidebarContent,
   collapsed: controlledCollapsed,
   onCollapsedChange,
+  onToggleFocus,
   sidebarTitle = '菜单',
   sidebarFocusable = true,
 }) => {
@@ -36,8 +38,8 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   };
 
   const handleToggleFocus = () => {
-    // 只在 sidebar 可聚焦时才展开
-    if (sidebarFocusable && collapsed) {
+    onToggleFocus?.();
+    if (collapsed) {
       setCollapsed(false);
     }
   };
@@ -52,21 +54,15 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
       >
         <View style={styles.sidebarHeader}>
           {!collapsed && <ThemedText style={styles.sidebarTitle}>{sidebarTitle}</ThemedText>}
-          {sidebarFocusable ? (
-            <StyledButton
-              focusable={sidebarFocusable}
-              text={collapsed ? '>' : '<'}
-              onPress={() => setCollapsed(!collapsed)}
-              onFocus={handleToggleFocus}
-              variant="ghost"
-              style={styles.toggleButton}
-              textStyle={styles.toggleText}
-            />
-          ) : (
-            <View style={styles.toggleButton}>
-              <ThemedText style={styles.toggleText}>{collapsed ? '>' : '<'}</ThemedText>
-            </View>
-          )}
+          <StyledButton
+            focusable={true}
+            text={collapsed ? '>' : '<'}
+            onPress={() => setCollapsed(!collapsed)}
+            onFocus={handleToggleFocus}
+            variant="ghost"
+            style={styles.toggleButton}
+            textStyle={styles.toggleText}
+          />
         </View>
         <View style={styles.sidebarContent}>
           {sidebarContent}
