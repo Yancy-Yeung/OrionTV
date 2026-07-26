@@ -49,7 +49,6 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
       {/* 侧边栏容器 - 添加 onFocus 实现自动展开 */}
       <View
         style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}
-        focusable={true}
         onFocus={handleSidebarFocus}
       >
         <View style={styles.sidebarHeader}>
@@ -66,7 +65,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
           {sidebarContent}
         </ScrollView>
       </View>
-      <View style={styles.mainContent} focusable={true} onFocus={handleMainContentFocus}>{children}</View>
+      <View style={styles.mainContent} onFocus={handleMainContentFocus}>{children}</View>
     </View>
   );
 };

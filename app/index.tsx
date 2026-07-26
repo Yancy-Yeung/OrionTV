@@ -25,6 +25,7 @@ export default function HomeScreen() {
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [lastFocusedCardIndex, setLastFocusedCardIndex] = useState<number>(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
 
@@ -156,10 +157,6 @@ export default function HomeScreen() {
     setSidebarCollapsed(false);
   }, []);
 
-  const handleMainContentFocus = useCallback(() => {
-    setSidebarCollapsed(true);
-  }, []);
-
   // 二级菜单紧跟在一级分类下面，选中时展开标签组
   const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
@@ -214,7 +211,7 @@ export default function HomeScreen() {
     );
   };
 
-  const renderContentItem = ({ item }: { item: RowItem; index: number }) => (
+  const renderContentItem = ({ item, index }: { item: RowItem; index: number }) => (
     <VideoCard
       id={item.id}
       source={item.source}
@@ -229,7 +226,11 @@ export default function HomeScreen() {
       totalEpisodes={item.totalEpisodes}
       api={api}
       onRecordDeleted={fetchInitialData}
-      onFocus={() => setSidebarCollapsed(true)}
+      hasTVPreferredFocus={deviceType === 'tv' && index === lastFocusedCardIndex}
+      onFocus={() => {
+        setSidebarCollapsed(true);
+        setLastFocusedCardIndex(index);
+      }}
     />
   );
 
@@ -472,7 +473,6 @@ export default function HomeScreen() {
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           sidebarContent={tvSidebarContent}
-          handleMainContentFocus={handleMainContentFocus}
         >
           {renderHeader()}
           {shouldShowApiConfig ? (
