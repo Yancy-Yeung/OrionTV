@@ -26,6 +26,7 @@ export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lastFocusedCardIndex, setLastFocusedCardIndex] = useState<number>(0);
+  const sidebarItemRefs = useRef<Record<string, React.RefObject<any>>>({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
 
@@ -153,19 +154,40 @@ export default function HomeScreen() {
     }
   };
 
+  const getSidebarItemRef = useCallback((key: string) => {
+    if (!sidebarItemRefs.current[key]) {
+      sidebarItemRefs.current[key] = React.createRef<any>();
+    }
+    return sidebarItemRefs.current[key];
+  }, []);
+
+  const focusSelectedSidebarItem = useCallback(() => {
+    if (!selectedCategory) return;
+
+    const hasTags = selectedCategory.tags && selectedCategory.tags.length > 0;
+    const targetKey = hasTags && selectedTag ? `tag-${selectedTag}` : `category-${selectedCategory.title}`;
+    const targetRef = sidebarItemRefs.current[targetKey];
+    if (targetRef?.current?.focus) {
+      setTimeout(() => targetRef.current.focus(), 0);
+    }
+  }, [selectedCategory, selectedTag]);
+
   const handleSidebarFocus = useCallback(() => {
     setSidebarCollapsed(false);
-  }, []);
+    focusSelectedSidebarItem();
+  }, [focusSelectedSidebarItem]);
 
   // 二级菜单紧跟在一级分类下面，选中时展开标签组
   const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
     const hasTags = item.tags && item.tags.length > 0;
+    const categoryHasPreferredFocus = isSelected && (sidebarCollapsed || !hasTags || !selectedTag);
 
     return (
       <View>
         <StyledButton
-          hasTVPreferredFocus={index === 0}
+          ref={getSidebarItemRef(`category-${item.title}`)}
+          hasTVPreferredFocus={categoryHasPreferredFocus || index === 0}
           text={sidebarCollapsed ? item.title.charAt(0) : item.title}
           onPress={() => handleCategorySelect(item)}
           onFocus={handleSidebarFocus}
@@ -182,6 +204,8 @@ export default function HomeScreen() {
               return (
                 <StyledButton
                   key={tag}
+                  ref={getSidebarItemRef(`tag-${tag}`)}
+                  hasTVPreferredFocus={tagSelected}
                   text={tag}
                   onPress={() => handleTagSelect(tag)}
                   onFocus={handleSidebarFocus}

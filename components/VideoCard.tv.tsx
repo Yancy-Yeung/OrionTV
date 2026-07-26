@@ -164,6 +164,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
           ]}
           // activeOpacity={1}
           delayLongPress={1000}
+          {...rest}
         >
           <View style={styles.card}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
