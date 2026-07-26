@@ -182,12 +182,13 @@ export default function HomeScreen() {
     const isSelected = selectedCategory?.title === item.title;
     const hasTags = item.tags && item.tags.length > 0;
     const categoryHasPreferredFocus = isSelected && (sidebarCollapsed || !hasTags || !selectedTag);
+    const initialCategoryFocus = !selectedCategory && index === 0;
 
     return (
       <View>
         <StyledButton
           ref={getSidebarItemRef(`category-${item.title}`)}
-          hasTVPreferredFocus={categoryHasPreferredFocus || index === 0}
+          hasTVPreferredFocus={categoryHasPreferredFocus || initialCategoryFocus}
           text={sidebarCollapsed ? item.title.charAt(0) : item.title}
           onPress={() => handleCategorySelect(item)}
           onFocus={handleSidebarFocus}
