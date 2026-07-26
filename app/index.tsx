@@ -28,8 +28,8 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
 
-  // 响应式布局配置
-  const responsiveConfig = useResponsiveLayout();
+  // 响应式布局配置 - 传入 sidebarCollapsed 使右侧内容区根据侧边栏状态自适应
+  const responsiveConfig = useResponsiveLayout(sidebarCollapsed);
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
   const { deviceType, spacing } = responsiveConfig;
 
@@ -156,34 +156,44 @@ export default function HomeScreen() {
     setSidebarCollapsed(false);
   }, []);
 
+  // 二级菜单紧跟在一级分类下面，选中时展开标签组
   const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
-    return (
-      <StyledButton
-        hasTVPreferredFocus={index === 0}
-        text={sidebarCollapsed ? item.title.charAt(0) : item.title}
-        onPress={() => handleCategorySelect(item)}
-        onFocus={handleSidebarFocus}
-        isSelected={isSelected}
-        style={[dynamicStyles.tvSidebarItem, sidebarCollapsed && dynamicStyles.tvSidebarItemCollapsed]}
-        textStyle={sidebarCollapsed ? dynamicStyles.tvSidebarItemCollapseText : dynamicStyles.categoryText}
-        variant="ghost"
-      />
-    );
-  };
+    const hasTags = item.tags && item.tags.length > 0;
 
-  const renderTVTagItem = ({ item, index }: { item: string; index: number }) => {
-    const isSelected = selectedTag === item;
     return (
-      <StyledButton
-        text={item}
-        onPress={() => handleTagSelect(item)}
-        onFocus={handleSidebarFocus}
-        isSelected={isSelected}
-        style={dynamicStyles.tvTagButton}
-        textStyle={dynamicStyles.categoryText}
-        variant="ghost"
-      />
+      <View>
+        <StyledButton
+          hasTVPreferredFocus={index === 0}
+          text={sidebarCollapsed ? item.title.charAt(0) : item.title}
+          onPress={() => handleCategorySelect(item)}
+          onFocus={handleSidebarFocus}
+          isSelected={isSelected}
+          style={[dynamicStyles.tvSidebarItem, sidebarCollapsed && dynamicStyles.tvSidebarItemCollapsed]}
+          textStyle={sidebarCollapsed ? dynamicStyles.tvSidebarItemCollapseText : dynamicStyles.categoryText}
+          variant="ghost"
+        />
+        {/* 选中且有标签时，紧跟在分类下面显示标签组 */}
+        {isSelected && hasTags && !sidebarCollapsed && (
+          <View style={dynamicStyles.tvTagGroup}>
+            {item.tags!.map((tag) => {
+              const tagSelected = selectedTag === tag;
+              return (
+                <StyledButton
+                  key={tag}
+                  text={tag}
+                  onPress={() => handleTagSelect(tag)}
+                  onFocus={handleSidebarFocus}
+                  isSelected={tagSelected}
+                  style={dynamicStyles.tvTagButton}
+                  textStyle={dynamicStyles.categoryText}
+                  variant="ghost"
+                />
+              );
+            })}
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -330,21 +340,16 @@ export default function HomeScreen() {
       fontWeight: "600",
       color: "#fff",
     },
-    tvTagSection: {
-      marginTop: spacing * 2,
-    },
-    tvTagTitle: {
-      color: "#888",
-      fontSize: 12,
+    tvTagGroup: {
+      marginLeft: spacing,
+      marginTop: spacing / 4,
       marginBottom: spacing / 2,
-    },
-    tvTagList: {
-      paddingBottom: spacing,
     },
     tvTagButton: {
-      marginBottom: spacing / 2,
+      marginBottom: spacing / 4,
       alignItems: "flex-start",
       width: "100%",
+      paddingHorizontal: spacing / 2,
     },
     contentContainer: {
       flex: 1,
@@ -352,27 +357,13 @@ export default function HomeScreen() {
   });
 
   const tvSidebarContent = (
-    <>
-      <FlatList
-        data={categories}
-        renderItem={renderTVCategoryItem}
-        keyExtractor={(item) => item.title}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={dynamicStyles.tvSidebarList}
-      />
-      {!sidebarCollapsed && selectedCategory?.tags && (
-        <View style={dynamicStyles.tvTagSection}>
-          <ThemedText style={dynamicStyles.tvTagTitle}>子分类</ThemedText>
-          <FlatList
-            data={selectedCategory.tags}
-            renderItem={renderTVTagItem}
-            keyExtractor={(item) => item}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={dynamicStyles.tvTagList}
-          />
-        </View>
-      )}
-    </>
+    <FlatList
+      data={categories}
+      renderItem={renderTVCategoryItem}
+      keyExtractor={(item) => item.title}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={dynamicStyles.tvSidebarList}
+    />
   );
 
   const content = (

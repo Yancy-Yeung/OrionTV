@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { ThemedText } from '@/components/ThemedText';
@@ -32,11 +32,22 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
     }
   };
 
+  // 当焦点进入侧边栏区域时自动展开（解决折叠后焦点死锁问题）
+  const handleSidebarFocus = useCallback(() => {
+    if (collapsed) {
+      setCollapsed(false);
+    }
+  }, [collapsed, setCollapsed]);
+
   const styles = createStyles(spacing, collapsed);
 
   return (
     <View style={styles.container}>
-      <View style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}>
+      {/* 侧边栏容器 - 添加 onFocus 实现自动展开 */}
+      <View
+        style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}
+        onFocus={handleSidebarFocus}
+      >
         <View style={styles.sidebarHeader}>
           {!collapsed && <ThemedText style={styles.sidebarTitle}>{sidebarTitle}</ThemedText>}
           <StyledButton
