@@ -37,12 +37,12 @@ export const getCommonResponsiveStyles = (config: ResponsiveConfig) => {
     // 容器样式
     container: {
       flex: 1,
-      paddingHorizontal: spacing,
+      paddingHorizontal: deviceType === 'tv' ? 0 : spacing,
     },
 
     safeContainer: {
       flex: 1,
-      paddingHorizontal: spacing,
+      paddingHorizontal: deviceType === 'tv' ? 0 : spacing,
       paddingTop: deviceType === 'mobile' ? 20 : deviceType === 'tablet' ? 30 : 40,
     },
 
