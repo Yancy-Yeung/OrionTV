@@ -10,6 +10,7 @@ interface TVSidebarNavigatorProps {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   sidebarTitle?: string;
+  handleMainContentFocus?: () => void;
 }
 
 const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
@@ -18,11 +19,13 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   collapsed: controlledCollapsed,
   onCollapsedChange,
   sidebarTitle = '菜单',
+  handleMainContentFocus,
 }) => {
-  const { spacing } = useResponsiveLayout();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
   const collapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const { spacing } = useResponsiveLayout(collapsed);
 
   const setCollapsed = (value: boolean) => {
     if (onCollapsedChange) {
@@ -46,6 +49,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
       {/* 侧边栏容器 - 添加 onFocus 实现自动展开 */}
       <View
         style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}
+        focusable={true}
         onFocus={handleSidebarFocus}
       >
         <View style={styles.sidebarHeader}>
@@ -62,7 +66,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
           {sidebarContent}
         </ScrollView>
       </View>
-      <View style={styles.mainContent}>{children}</View>
+      <View style={styles.mainContent} focusable={true} onFocus={handleMainContentFocus}>{children}</View>
     </View>
   );
 };
