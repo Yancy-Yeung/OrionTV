@@ -255,7 +255,7 @@ export default function HomeScreen() {
       totalEpisodes={item.totalEpisodes}
       api={api}
       onRecordDeleted={fetchInitialData}
-      hasTVPreferredFocus={deviceType === 'tv' && index === lastFocusedCardIndex}
+      hasTVPreferredFocus={deviceType === 'tv' && sidebarCollapsed && index === lastFocusedCardIndex}
       onFocus={() => {
         setSidebarCollapsed(true);
         setLastFocusedCardIndex(index);
