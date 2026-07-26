@@ -40,6 +40,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       sourceName,
       progress,
       episodeIndex,
+      totalEpisodes,
       onFocus,
       onRecordDeleted,
       api,

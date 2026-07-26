@@ -65,7 +65,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
           {sidebarContent}
         </View>
       </Pressable>
-      <Pressable style={styles.mainContent} onFocus={handleMainContentFocus}>{children}</Pressable>
+      <View style={styles.mainContent}>{children}</View>
     </View>
   );
 };
