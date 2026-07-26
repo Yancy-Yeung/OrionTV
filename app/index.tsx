@@ -14,6 +14,7 @@ import CustomScrollView from "@/components/CustomScrollView";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
+import TVSidebarNavigator from "@/components/navigation/TVSidebarNavigator";
 import { useApiConfig, getApiConfigErrorMessage } from "@/hooks/useApiConfig";
 import { Colors } from "@/constants/Colors";
 
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
 
@@ -150,6 +152,41 @@ export default function HomeScreen() {
     }
   };
 
+  const handleSidebarFocus = useCallback(() => {
+    setSidebarCollapsed(false);
+  }, []);
+
+  const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
+    const isSelected = selectedCategory?.title === item.title;
+    return (
+      <StyledButton
+        hasTVPreferredFocus={index === 0}
+        text={sidebarCollapsed ? item.title.charAt(0) : item.title}
+        onPress={() => handleCategorySelect(item)}
+        onFocus={handleSidebarFocus}
+        isSelected={isSelected}
+        style={[dynamicStyles.tvSidebarItem, sidebarCollapsed && dynamicStyles.tvSidebarItemCollapsed]}
+        textStyle={sidebarCollapsed ? dynamicStyles.tvSidebarItemCollapseText : dynamicStyles.categoryText}
+        variant="ghost"
+      />
+    );
+  };
+
+  const renderTVTagItem = ({ item, index }: { item: string; index: number }) => {
+    const isSelected = selectedTag === item;
+    return (
+      <StyledButton
+        text={item}
+        onPress={() => handleTagSelect(item)}
+        onFocus={handleSidebarFocus}
+        isSelected={isSelected}
+        style={dynamicStyles.tvTagButton}
+        textStyle={dynamicStyles.categoryText}
+        variant="ghost"
+      />
+    );
+  };
+
   const renderCategory = ({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
     return (
@@ -178,6 +215,7 @@ export default function HomeScreen() {
       totalEpisodes={item.totalEpisodes}
       api={api}
       onRecordDeleted={fetchInitialData}
+      onFocus={() => setSidebarCollapsed(true)}
     />
   );
 
@@ -272,10 +310,70 @@ export default function HomeScreen() {
       fontSize: deviceType === "mobile" ? 14 : 16,
       fontWeight: "500",
     },
+    tvSidebarList: {
+      paddingBottom: spacing,
+    },
+    tvSidebarItem: {
+      marginBottom: spacing / 2,
+      width: "100%",
+      justifyContent: "center",
+      alignItems: "flex-start",
+      paddingVertical: spacing * 0.75,
+      borderRadius: 10,
+    },
+    tvSidebarItemCollapsed: {
+      alignItems: "center",
+      paddingHorizontal: 0,
+    },
+    tvSidebarItemCollapseText: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: "#fff",
+    },
+    tvTagSection: {
+      marginTop: spacing * 2,
+    },
+    tvTagTitle: {
+      color: "#888",
+      fontSize: 12,
+      marginBottom: spacing / 2,
+    },
+    tvTagList: {
+      paddingBottom: spacing,
+    },
+    tvTagButton: {
+      marginBottom: spacing / 2,
+      alignItems: "flex-start",
+      width: "100%",
+    },
     contentContainer: {
       flex: 1,
     },
   });
+
+  const tvSidebarContent = (
+    <>
+      <FlatList
+        data={categories}
+        renderItem={renderTVCategoryItem}
+        keyExtractor={(item) => item.title}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={dynamicStyles.tvSidebarList}
+      />
+      {!sidebarCollapsed && selectedCategory?.tags && (
+        <View style={dynamicStyles.tvTagSection}>
+          <ThemedText style={dynamicStyles.tvTagTitle}>子分类</ThemedText>
+          <FlatList
+            data={selectedCategory.tags}
+            renderItem={renderTVTagItem}
+            keyExtractor={(item) => item}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={dynamicStyles.tvTagList}
+          />
+        </View>
+      )}
+    </>
+  );
 
   const content = (
     <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
@@ -372,9 +470,62 @@ export default function HomeScreen() {
     </ThemedView>
   );
 
-  // 根据设备类型决定是否包装在响应式导航中
   if (deviceType === "tv") {
-    return content;
+    return (
+      <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
+        <TVSidebarNavigator
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+          sidebarContent={tvSidebarContent}
+        >
+          {renderHeader()}
+          {shouldShowApiConfig ? (
+            <View style={commonStyles.center}>
+              <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>
+                {getApiConfigErrorMessage(apiConfigStatus)}
+              </ThemedText>
+            </View>
+          ) : apiConfigStatus.isValidating ? (
+            <View style={commonStyles.center}>
+              <ActivityIndicator size="large" />
+              <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>
+                正在验证服务器配置...
+              </ThemedText>
+            </View>
+          ) : apiConfigStatus.error && !apiConfigStatus.isValid ? (
+            <View style={commonStyles.center}>
+              <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>
+                {apiConfigStatus.error}
+              </ThemedText>
+            </View>
+          ) : loading ? (
+            <View style={commonStyles.center}>
+              <ActivityIndicator size="large" />
+            </View>
+          ) : error ? (
+            <View style={commonStyles.center}>
+              <ThemedText type="subtitle" style={{ padding: spacing }}>
+                {error}
+              </ThemedText>
+            </View>
+          ) : (
+            <Animated.View style={[dynamicStyles.contentContainer, { opacity: fadeAnim }]}> 
+              <CustomScrollView
+                data={contentData}
+                renderItem={renderContentItem}
+                loading={loading}
+                loadingMore={loadingMore}
+                error={error}
+                onEndReached={loadMoreData}
+                loadMoreThreshold={LOAD_MORE_THRESHOLD}
+                emptyMessage={selectedCategory?.tags ? "请选择一个子分类" : "该分类下暂无内容"}
+                ListFooterComponent={renderFooter}
+              />
+            </Animated.View>
+          )}
+        </TVSidebarNavigator>
+      </ThemedView>
+    );
   }
 
   return <ResponsiveNavigation>{content}</ResponsiveNavigation>;
