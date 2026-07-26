@@ -71,10 +71,13 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
     },
   }), [responsiveConfig.spacing, showScrollToTop]);
 
-  // 计算预估每项高度，用于 FlatList 虚拟化优化
-  const estimatedItemSize = useMemo(() => {
+  // 计算 FlatList 每个网格项的高度，用于 TV 焦点滚动对齐
+  const itemHeight = useMemo(() => {
+    if (responsiveConfig.deviceType === "tv") {
+      return 300; // VideoCard.tv 的 pressable 高度：CARD_HEIGHT 240 + 60
+    }
     return responsiveConfig.cardHeight + responsiveConfig.spacing;
-  }, [responsiveConfig.cardHeight, responsiveConfig.spacing]);
+  }, [responsiveConfig.cardHeight, responsiveConfig.deviceType, responsiveConfig.spacing]);
 
   // 添加返回键处理逻辑
   useEffect(() => {
@@ -168,7 +171,12 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={responsiveConfig.deviceType !== 'tv'}
-        estimatedItemSize={estimatedItemSize}
+        getItemLayout={(_, index) => ({
+          length: itemHeight,
+          offset: itemHeight * Math.floor(index / effectiveColumns),
+          index,
+        })}
+        estimatedItemSize={itemHeight}
         ListFooterComponent={renderFooter()}
         removeClippedSubviews={true}
         initialNumToRender={10}
