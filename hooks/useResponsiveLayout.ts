@@ -55,11 +55,16 @@ const getLayoutConfig = (
       break;
 
     case "tv":
-    default:
-      columns = 5;
-      cardWidth = 160; // Fixed width for TV
-      cardHeight = 240; // Fixed height for TV
+    default: {
+      const sidebarWidth = sidebarCollapsed ? 80 : 240;
+      const availableWidth = width - sidebarWidth - spacing;
+      const minCardWidth = 150;
+      const maxColumns = Math.max(1, Math.floor((availableWidth + spacing) / (minCardWidth + spacing)));
+      columns = Math.min(5, maxColumns);
+      cardWidth = Math.floor((availableWidth - spacing * (columns - 1)) / columns);
+      cardHeight = Math.floor(cardWidth * 1.5);
       break;
+    }
   }
 
   return {
@@ -74,7 +79,7 @@ const getLayoutConfig = (
   };
 };
 
-export const useResponsiveLayout = (): ResponsiveConfig => {
+export const useResponsiveLayout = (sidebarCollapsed: boolean = false): ResponsiveConfig => {
   const [dimensions, setDimensions] = useState(() => {
     const { width, height } = Dimensions.get("window");
     return { width, height };
