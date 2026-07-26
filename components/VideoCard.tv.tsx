@@ -227,14 +227,16 @@ export default VideoCard;
 
 const CARD_WIDTH = 160;
 const CARD_HEIGHT = 240;
+const TV_CARD_HEIGHT = CARD_HEIGHT + 60;
 
 const styles = StyleSheet.create({
   wrapper: {
     marginHorizontal: 8,
+    height: TV_CARD_HEIGHT,
   },
   pressable: {
     width: CARD_WIDTH + 20,
-    height: CARD_HEIGHT + 60,
+    height: TV_CARD_HEIGHT,
     justifyContent: 'center',
     alignItems: "center",
     overflow: "visible",

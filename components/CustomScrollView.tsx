@@ -1,8 +1,12 @@
-import React, { useCallback, useRef, useState, useEffect, useMemo } from "react";
+import React, { useCallback, useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, BackHandler } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
+
+export interface CustomScrollViewRef {
+  scrollToIndex: (params: { index: number; animated?: boolean; viewPosition?: number }) => void;
+}
 
 interface CustomScrollViewProps {
   data: any[];
@@ -17,7 +21,7 @@ interface CustomScrollViewProps {
   ListFooterComponent?: React.ComponentType<any> | React.ReactElement | null;
 }
 
-const CustomScrollView: React.FC<CustomScrollViewProps> = ({
+const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(({
   data,
   renderItem,
   numColumns,
@@ -28,9 +32,18 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
   loadMoreThreshold = 200,
   emptyMessage = "暂无内容",
   ListFooterComponent,
-}) => {
+}, ref) => {
   const flatListRef = useRef<FlatList>(null);
-  const firstCardRef = useRef<any>(null); // <--- 新增
+
+  useImperativeHandle(ref, () => ({
+    scrollToIndex: (params: { index: number; animated?: boolean; viewPosition?: number }) => {
+      flatListRef.current?.scrollToIndex({
+        index: params.index,
+        animated: params.animated ?? true,
+        viewPosition: params.viewPosition ?? 0,
+      });
+    },
+  }));
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
@@ -40,17 +53,27 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
   const effectiveColumns = numColumns || responsiveConfig.columns;
 
   // 使用 useMemo 缓存 renderItem，避免每次 render 都创建新函数
+  // TV模式：在外层包裹 View 添加 marginBottom，使每行间距计入实际布局
   const renderItemWrapper = useMemo(() => {
+    const tvMode = responsiveConfig.deviceType === 'tv';
     return ({ item, index }: { item: any; index: number }) => {
-      return renderItem({ item, index });
+      const card = renderItem({ item, index });
+      return (
+        <View style={{ marginBottom: tvMode ? responsiveConfig.spacing : 0 }}>
+          {card}
+        </View>
+      );
     };
-  }, [renderItem]);
+  }, [renderItem, responsiveConfig.deviceType, responsiveConfig.spacing]);
 
   // 动态样式
   const dynamicStyles = useMemo(() => StyleSheet.create({
     listContent: {
       paddingBottom: responsiveConfig.spacing * 2,
       paddingHorizontal: responsiveConfig.spacing / 2,
+    },
+    columnWrapper: {
+      marginBottom: 0,
     },
     itemContainer: {
       width: responsiveConfig.cardWidth,
@@ -69,12 +92,13 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
       borderRadius: responsiveConfig.spacing,
       opacity: showScrollToTop ? 1 : 0,
     },
-  }), [responsiveConfig.spacing, showScrollToTop]);
+  }), [responsiveConfig.spacing, responsiveConfig.deviceType, showScrollToTop]);
 
   // 计算 FlatList 每个网格项的高度，用于 TV 焦点滚动对齐
   const itemHeight = useMemo(() => {
     if (responsiveConfig.deviceType === "tv") {
-      return 300; // VideoCard.tv 的 pressable 高度：CARD_HEIGHT 240 + 60
+      // VideoCard.tv pressable height = 300, plus column wrapper spacing for row gap
+      return 300 + responsiveConfig.spacing;
     }
     return responsiveConfig.cardHeight + responsiveConfig.spacing;
   }, [responsiveConfig.cardHeight, responsiveConfig.deviceType, responsiveConfig.spacing]);
@@ -110,9 +134,6 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
 
   const scrollToTop = () => {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-    setTimeout(() => {
-      firstCardRef.current?.focus();
-    }, 500); // 500ms 适配大多数动画时长
   };
 
   const renderFooter = () => {
@@ -176,11 +197,12 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
           offset: itemHeight * Math.floor(index / effectiveColumns),
           index,
         })}
-        estimatedItemSize={itemHeight}
         ListFooterComponent={renderFooter()}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
+        initialNumToRender={responsiveConfig.deviceType === 'tv' ? 20 : 10}
+        maxToRenderPerBatch={responsiveConfig.deviceType === 'tv' ? 20 : 10}
+        windowSize={responsiveConfig.deviceType === 'tv' ? 15 : 5}
+        removeClippedSubviews={responsiveConfig.deviceType !== 'tv'}
+        columnWrapperStyle={effectiveColumns > 1 ? dynamicStyles.columnWrapper : undefined}
       />
       {deviceType!=='tv' && (
         <TouchableOpacity
@@ -193,6 +215,6 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
       )}
     </View>
   );
-};
+});
 
 export default CustomScrollView;

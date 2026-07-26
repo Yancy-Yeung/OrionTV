@@ -10,6 +10,7 @@ interface TVSidebarNavigatorProps {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   sidebarTitle?: string;
+  sidebarFocusable?: boolean;
 }
 
 const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
@@ -18,6 +19,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   collapsed: controlledCollapsed,
   onCollapsedChange,
   sidebarTitle = '菜单',
+  sidebarFocusable = true,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
@@ -33,30 +35,45 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
     }
   };
 
+  const handleToggleFocus = () => {
+    // 只在 sidebar 可聚焦时才展开
+    if (sidebarFocusable && collapsed) {
+      setCollapsed(false);
+    }
+  };
+
   const styles = createStyles(spacing, collapsed);
 
   return (
     <View style={styles.container}>
-      {/* 侧边栏容器 - 使用 View 避免嵌套 Pressable 焦点冲突 */}
+      {/* 侧边栏容器 - 整体控制焦点 */}
       <View
         style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}
       >
         <View style={styles.sidebarHeader}>
           {!collapsed && <ThemedText style={styles.sidebarTitle}>{sidebarTitle}</ThemedText>}
-          <StyledButton
-            text={collapsed ? '>' : '<'}
-            onPress={() => setCollapsed(!collapsed)}
-            variant="ghost"
-            style={styles.toggleButton}
-            textStyle={styles.toggleText}
-          />
+          {sidebarFocusable ? (
+            <StyledButton
+              focusable={sidebarFocusable}
+              text={collapsed ? '>' : '<'}
+              onPress={() => setCollapsed(!collapsed)}
+              onFocus={handleToggleFocus}
+              variant="ghost"
+              style={styles.toggleButton}
+              textStyle={styles.toggleText}
+            />
+          ) : (
+            <View style={styles.toggleButton}>
+              <ThemedText style={styles.toggleText}>{collapsed ? '>' : '<'}</ThemedText>
+            </View>
+          )}
         </View>
         <View style={styles.sidebarContent}>
           {sidebarContent}
         </View>
       </View>
-      {/* 主内容区 - focusable 确保焦点系统有安全的落点 */}
-      <View style={styles.mainContent} focusable={true}>
+      {/* 主内容区 */}
+      <View style={styles.mainContent}>
         {children}
       </View>
     </View>

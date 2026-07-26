@@ -11,6 +11,7 @@ import { StyledButton } from "@/components/StyledButton";
 import useHomeStore, { RowItem, Category } from "@/stores/homeStore";
 import useAuthStore from "@/stores/authStore";
 import CustomScrollView from "@/components/CustomScrollView";
+import type { CustomScrollViewRef } from "@/components/CustomScrollView";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
@@ -26,6 +27,11 @@ export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lastFocusedCardIndex, setLastFocusedCardIndex] = useState<number>(0);
+  const [tvFocusRegion, setTVFocusRegion] = useState<'sidebar' | 'content'>('sidebar');
+  const [restoreCardFocus, setRestoreCardFocus] = useState(false);
+  const customScrollRef = useRef<CustomScrollViewRef>(null);
+  const hasMountedRef = useRef(false);
+  const lastFocusedCardIndexRef = useRef<number>(0);
   const sidebarItemRefs = useRef<Record<string, React.RefObject<any>>>({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
@@ -48,6 +54,9 @@ export default function HomeScreen() {
     refreshPlayRecords,
     clearError,
   } = useHomeStore();
+
+  const sidebarFocusEnabled = tvFocusRegion === 'sidebar';
+  const contentFocusEnabled = tvFocusRegion === 'content';
   const { isLoggedIn, logout } = useAuthStore();
   const apiConfigStatus = useApiConfig();
 
@@ -65,7 +74,14 @@ export default function HomeScreen() {
     const handleBackPress = () => {
       const now = Date.now();
 
-      // 如果还没按过返回键，或距离上次超过2秒
+      // 如果在内容区，第一次按返回键返回侧边栏
+      if (tvFocusRegion === 'content') {
+        setTVFocusRegion('sidebar');
+        setSidebarCollapsed(false);
+        return true; // 拦截返回事件
+      }
+
+      // 如果在侧边栏，双击返回退出
       if (!backPressTimeRef.current || now - backPressTimeRef.current > 2000) {
         backPressTimeRef.current = now;
         ToastAndroid.show("再按一次返回键退出", ToastAndroid.SHORT);
@@ -87,7 +103,7 @@ export default function HomeScreen() {
         backPressTimeRef.current = null;
       };
     }
-  }, [])
+  }, [tvFocusRegion])
 );
 
   // 统一的数据获取逻辑
@@ -143,11 +159,17 @@ export default function HomeScreen() {
 
   const handleCategorySelect = (category: Category) => {
     setSelectedTag(null);
+    // 选择分类后，继续留在侧边栏模式（可能要选标签）
+    setTVFocusRegion('sidebar');
+    setSidebarCollapsed(false);
     selectCategory(category);
   };
 
   const handleTagSelect = (tag: string) => {
     setSelectedTag(tag);
+    // 选择标签后，继续留在侧边栏模式
+    setTVFocusRegion('sidebar');
+    setSidebarCollapsed(false);
     if (selectedCategory) {
       const categoryWithTag = { ...selectedCategory, tag: tag };
       selectCategory(categoryWithTag);
@@ -173,21 +195,62 @@ export default function HomeScreen() {
   }, [selectedCategory, selectedTag]);
 
   const handleSidebarFocus = useCallback(() => {
-    setSidebarCollapsed(false);
-    focusSelectedSidebarItem();
-  }, [focusSelectedSidebarItem]);
+    // 仅展开侧边栏，不改变焦点区域（避免与内容区竞争）
+    if (sidebarFocusEnabled) {
+      setSidebarCollapsed(false);
+    }
+  }, [sidebarFocusEnabled]);
+
+
+  // 从详情页返回时：保持 FlatList 挂载，只恢复焦点和滚动位置
+  lastFocusedCardIndexRef.current = lastFocusedCardIndex;
+
+  useEffect(() => {
+    if (restoreCardFocus) {
+      const timer = setTimeout(() => {
+        setRestoreCardFocus(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [restoreCardFocus]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (hasMountedRef.current && lastFocusedCardIndexRef.current >= 0) {
+        const targetIndex = lastFocusedCardIndexRef.current;
+        setTVFocusRegion('content');
+        setSidebarCollapsed(true);
+        setLastFocusedCardIndex(targetIndex);  // 只有这里更新 state
+        setRestoreCardFocus(true);
+
+        customScrollRef.current?.scrollToIndex({
+          index: targetIndex,
+          animated: false,
+          viewPosition: 0.5,
+        });
+
+        const timer = setTimeout(() => {
+          setRestoreCardFocus(false);  // 100ms 后清除恢复标志
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
+        hasMountedRef.current = true;
+      }
+    }, [])
+  );
 
   // 二级菜单紧跟在一级分类下面，选中时展开标签组
   const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
     const hasTags = item.tags && item.tags.length > 0;
-    const categoryHasPreferredFocus = isSelected && (sidebarCollapsed || !hasTags || !selectedTag);
-    const initialCategoryFocus = !selectedCategory && index === 0;
+    const categoryHasPreferredFocus = sidebarFocusEnabled && isSelected && (sidebarCollapsed || !hasTags || !selectedTag);
+    const initialCategoryFocus = sidebarFocusEnabled && !selectedCategory && index === 0;
 
     return (
       <View>
         <StyledButton
           ref={getSidebarItemRef(`category-${item.title}`)}
+          focusable={sidebarFocusEnabled}
           hasTVPreferredFocus={!sidebarCollapsed && (categoryHasPreferredFocus || initialCategoryFocus)}
           text={sidebarCollapsed ? item.title.charAt(0) : item.title}
           onPress={() => handleCategorySelect(item)}
@@ -206,7 +269,8 @@ export default function HomeScreen() {
                 <StyledButton
                   key={tag}
                   ref={getSidebarItemRef(`tag-${tag}`)}
-                  hasTVPreferredFocus={tagSelected}
+                  focusable={sidebarFocusEnabled}
+                  hasTVPreferredFocus={tagSelected && sidebarFocusEnabled}
                   text={tag}
                   onPress={() => handleTagSelect(tag)}
                   onFocus={handleSidebarFocus}
@@ -227,8 +291,10 @@ export default function HomeScreen() {
     const isSelected = selectedCategory?.title === item.title;
     return (
       <StyledButton
+        focusable={deviceType !== 'tv' || sidebarFocusEnabled}
         text={item.title}
         onPress={() => handleCategorySelect(item)}
+        onFocus={() => setTVFocusRegion('content')}
         isSelected={isSelected}
         style={dynamicStyles.categoryButton}
         textStyle={dynamicStyles.categoryText}
@@ -236,27 +302,39 @@ export default function HomeScreen() {
     );
   };
 
-  const renderContentItem = ({ item, index }: { item: RowItem; index: number }) => (
-    <VideoCard
-      id={item.id}
-      source={item.source}
-      title={item.title}
-      poster={item.poster}
-      year={item.year}
-      rate={item.rate}
-      progress={item.progress}
-      playTime={item.play_time}
-      episodeIndex={item.episodeIndex}
-      sourceName={item.sourceName}
-      totalEpisodes={item.totalEpisodes}
-      api={api}
-      onRecordDeleted={fetchInitialData}
-      onFocus={() => {
-        setSidebarCollapsed(true);
-        setLastFocusedCardIndex(index);
-      }}
-    />
-  );
+  const renderContentItem = ({ item, index }: { item: RowItem; index: number }) => {
+    // 仅在需要恢复焦点时（从详情页返回）设置 hasTVPreferredFocus
+    const shouldRestoreFocus = deviceType === 'tv' && contentFocusEnabled && index === lastFocusedCardIndex && restoreCardFocus;
+    
+    return (
+      <VideoCard
+        key={item.id}
+        id={item.id}
+        source={item.source}
+        title={item.title}
+        poster={item.poster}
+        year={item.year}
+        rate={item.rate}
+        progress={item.progress}
+        playTime={item.play_time}
+        episodeIndex={item.episodeIndex}
+        sourceName={item.sourceName}
+        totalEpisodes={item.totalEpisodes}
+        api={api}
+        onRecordDeleted={fetchInitialData}
+        onFocus={() => {
+          // 只在首次进入内容区时切换焦点区域
+          if (tvFocusRegion !== 'content') {
+            setTVFocusRegion('content');
+            setSidebarCollapsed(true);
+          }
+          // 记录当前焦点位置，但不触发重渲染
+          lastFocusedCardIndexRef.current = index;
+        }}
+        hasTVPreferredFocus={shouldRestoreFocus}
+      />
+    );
+  };
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -424,9 +502,11 @@ export default function HomeScreen() {
               const isSelected = selectedTag === item;
               return (
                 <StyledButton
-                  hasTVPreferredFocus={index === 0}
+                  focusable={deviceType !== 'tv' || sidebarFocusEnabled}
+                  hasTVPreferredFocus={contentFocusEnabled && index === 0}
                   text={item}
                   onPress={() => handleTagSelect(item)}
+                  onFocus={() => setTVFocusRegion('content')}
                   isSelected={isSelected}
                   style={dynamicStyles.categoryButton}
                   textStyle={dynamicStyles.categoryText}
@@ -497,6 +577,7 @@ export default function HomeScreen() {
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
           sidebarContent={tvSidebarContent}
+          sidebarFocusable={sidebarFocusEnabled}
         >
           {renderHeader()}
           {shouldShowApiConfig ? (
@@ -531,6 +612,7 @@ export default function HomeScreen() {
           ) : (
             <Animated.View style={[dynamicStyles.contentContainer, { opacity: fadeAnim }]}> 
               <CustomScrollView
+                ref={customScrollRef}
                 data={contentData}
                 renderItem={renderContentItem}
                 loading={loading}
