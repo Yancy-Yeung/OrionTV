@@ -38,12 +38,14 @@ export const getCommonResponsiveStyles = (config: ResponsiveConfig) => {
     container: {
       flex: 1,
       paddingHorizontal: deviceType === 'tv' ? 5 : spacing,
+      paddingVertical: 2,
     },
 
     safeContainer: {
       flex: 1,
       paddingHorizontal: deviceType === 'tv' ? 5 : spacing,
       paddingTop: deviceType === 'mobile' ? 20 : deviceType === 'tablet' ? 30 : 40,
+      paddingBottom: 2,
     },
 
     // 标题样式
