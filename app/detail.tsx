@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
@@ -42,6 +42,9 @@ export default function DetailScreen() {
       abort();
     };
   }, [abort, init, q, source, id]);
+
+  // 动态样式 - 必须在所有条件 return 之前调用，保证 Hooks 调用顺序一致
+  const dynamicStyles = useMemo(() => createResponsiveStyles(deviceType, spacing), [deviceType, spacing]);
 
   const handlePlay = (episodeIndex: number) => {
     if (!detail) return;
@@ -101,9 +104,6 @@ export default function DetailScreen() {
       </ResponsiveNavigation>
     );
   }
-
-  // 动态样式
-  const dynamicStyles = createResponsiveStyles(deviceType, spacing);
 
   const renderDetailContent = () => {
     if (deviceType === "mobile") {

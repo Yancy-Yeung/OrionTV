@@ -144,42 +144,39 @@ export const useResponsiveValue = <T>(values: { mobile: T; tablet: T; tv: T }): 
 export const useResponsiveStyles = () => {
   const config = useResponsiveLayout();
 
-  return {
-    // Common responsive styles
-    container: {
-      paddingHorizontal: config.spacing,
-    },
+  // 缓存样式对象，避免每次渲染都创建新对象
+  const stylesRef = useRef<any>(null);
+  const prevDeviceTypeRef = useRef<string>(config.deviceType);
 
-    // Card styles
-    cardContainer: {
-      width: config.cardWidth,
-      height: config.cardHeight,
-      marginBottom: config.spacing,
-    },
+  if (!stylesRef.current || prevDeviceTypeRef.current !== config.deviceType) {
+    stylesRef.current = {
+      // Common responsive styles
+      container: {
+        paddingHorizontal: config.spacing,
+      },
 
-    // Grid styles
-    gridContainer: {
-      paddingHorizontal: config.spacing / 2,
-    },
+      // Card styles
+      cardContainer: {
+        width: config.cardWidth,
+        height: config.cardHeight,
+        marginBottom: config.spacing,
+      },
 
-    // Typography
-    titleFontSize: (() => {
-      if (config.deviceType === "mobile") return 18;
-      if (config.deviceType === "tablet") return 22;
-      return 28;
-    })(),
-    bodyFontSize: (() => {
-      if (config.deviceType === "mobile") return 14;
-      if (config.deviceType === "tablet") return 16;
-      return 18;
-    })(),
+      // Grid styles
+      gridContainer: {
+        paddingHorizontal: config.spacing / 2,
+      },
 
-    // Spacing
-    sectionSpacing: (() => {
-      if (config.deviceType === "mobile") return 16;
-      if (config.deviceType === "tablet") return 20;
-      return 24;
-    })(),
-    itemSpacing: config.spacing,
-  };
+      // Typography
+      titleFontSize: config.deviceType === "mobile" ? 18 : config.deviceType === "tablet" ? 22 : 28,
+      bodyFontSize: config.deviceType === "mobile" ? 14 : config.deviceType === "tablet" ? 16 : 18,
+
+      // Spacing
+      sectionSpacing: config.deviceType === "mobile" ? 16 : config.deviceType === "tablet" ? 20 : 24,
+      itemSpacing: config.spacing,
+    };
+    prevDeviceTypeRef.current = config.deviceType;
+  }
+
+  return stylesRef.current;
 };

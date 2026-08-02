@@ -1,6 +1,5 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef } from "react";
-import { View, TextInput, StyleSheet, Animated, Platform } from "react-native";
-import { useTVEventHandler } from "react-native";
+import { View, TextInput, StyleSheet, Animated, Platform, useTVEventHandler } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { SettingsSection } from "./SettingsSection";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -8,6 +7,8 @@ import { useRemoteControlStore } from "@/stores/remoteControlStore";
 import { useButtonAnimation } from "@/hooks/useAnimation";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { testApiSpeed, SpeedTestResult } from "@/services/speedTest";
+import { StyledButton } from "@/components/StyledButton";
 
 interface APIConfigSectionProps {
   onChanged: () => void;
@@ -27,6 +28,8 @@ export const APIConfigSection = forwardRef<APIConfigSectionRef, APIConfigSection
     const { serverUrl } = useRemoteControlStore();
     const [isInputFocused, setIsInputFocused] = useState(false);
     const [isSectionFocused, setIsSectionFocused] = useState(false);
+    const [isTesting, setIsTesting] = useState(false);
+    const [testResult, setTestResult] = useState<SpeedTestResult | null>(null);
     const inputRef = useRef<TextInput>(null);
     const inputAnimationStyle = useButtonAnimation(isSectionFocused, 1.01);
     const deviceType = useResponsiveLayout().deviceType;
@@ -81,6 +84,26 @@ export const APIConfigSection = forwardRef<APIConfigSectionRef, APIConfigSection
       setSelection(selection);
     };
 
+    const handleSpeedTest = async () => {
+      if (!apiBaseUrl || isTesting) return;
+      setIsTesting(true);
+      setTestResult(null);
+      try {
+        const result = await testApiSpeed(apiBaseUrl);
+        setTestResult(result);
+      } catch (err) {
+        console.error('Speed test failed:', err);
+        setTestResult({
+          url: apiBaseUrl,
+          avgMs: -1,
+          status: 'error',
+          message: '测试失败',
+        });
+      } finally {
+        setIsTesting(false);
+      }
+    };
+
     return (
       <SettingsSection focusable onFocus={handleSectionFocus} onBlur={handleSectionBlur}
         {...Platform.isTV || deviceType !== 'tv' ? undefined : { onPress: handlePress }}
@@ -120,6 +143,20 @@ export const APIConfigSection = forwardRef<APIConfigSectionRef, APIConfigSection
               onBlur={() => setIsInputFocused(false)}
             />
           </Animated.View>
+          <View style={styles.buttonRow}>
+            <StyledButton
+              title={isTesting ? '测试中...' : '测试速度'}
+              onPress={handleSpeedTest}
+              disabled={isTesting || !apiBaseUrl}
+              variant={isTesting ? 'secondary' : 'primary'}
+              style={styles.speedTestButton}
+            />
+            {testResult && (
+              <ThemedText style={styles.resultText}>
+                {testResult.avgMs > 0 ? `${testResult.avgMs}ms` : testResult.message || '无数据'}
+              </ThemedText>
+            )}
+          </View>
         </View>
       </SettingsSection>
     );
@@ -169,5 +206,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 10,
     elevation: 5,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 12,
+  },
+  speedTestButton: {
+    minWidth: 120,
+  },
+  resultText: {
+    fontSize: 14,
+    color: '#888',
+    flex: 1,
   },
 });

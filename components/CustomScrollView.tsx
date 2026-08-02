@@ -53,16 +53,19 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
   // 使用响应式列数，如果没有明确指定的话
   const effectiveColumns = numColumns || responsiveConfig.columns;
 
-  // 缓存 renderItemWrapper，避免每次 render 都创建新函数
+  // 优化 renderItemWrapper，使用 useMemo 缓存
   const renderItemWrapper = useMemo(() => {
     const isTV = responsiveConfig.deviceType === 'tv';
+    const spacing = responsiveConfig.spacing;
+    const columns = effectiveColumns;
+    
     return ({ item, index }: { item: any; index: number }): React.ReactElement => {
       const card = renderItem({ item, index });
-      const isLastInRow = (index + 1) % effectiveColumns === 0;
+      const isLastInRow = (index + 1) % columns === 0;
       return (
         <View style={{ 
-          marginBottom: isTV ? responsiveConfig.spacing : 0,
-          marginRight: isLastInRow ? 0 : responsiveConfig.spacing / 2,
+          marginBottom: isTV ? spacing : 0,
+          marginRight: isLastInRow ? 0 : spacing / 2,
         }}>
           {card}
         </View>
@@ -200,8 +203,10 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
         ref={flatListRef}
         data={data}
         renderItem={renderItemWrapper}
+        extraData={renderItem}
         numColumns={effectiveColumns}
         keyExtractor={(item, index) => item.id || String(index)}
+        getItemLayout={getItemLayout}
         contentContainerStyle={dynamicStyles.listContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}

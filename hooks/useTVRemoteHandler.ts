@@ -115,6 +115,7 @@ export const useTVRemoteHandler = () => {
     [showControls, showEpisodeModal, setShowControls, resetTimer, togglePlayPause, seek]
   );
 
+  // 必须在顶层调用，不能放在回调中
   useTVEventHandler(handleTVEvent);
 
   // 处理屏幕点击事件

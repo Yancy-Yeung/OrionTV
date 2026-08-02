@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useMemo } from 'react';
 import { TextInput, View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -42,7 +42,7 @@ const ResponsiveTextInput = forwardRef<TextInput, ResponsiveTextInputProps>(
     ref
   ) => {
     const { deviceType, spacing } = useResponsiveLayout();
-    const dynamicStyles = createResponsiveStyles(deviceType, spacing);
+    const dynamicStyles = useMemo(() => createResponsiveStyles(deviceType, spacing), [deviceType, spacing]);
 
     return (
       <View style={[dynamicStyles.container, style]}>

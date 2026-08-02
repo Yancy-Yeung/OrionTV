@@ -80,7 +80,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({ showControls, se
           <Pressable style={styles.progressBarTouchable} />
         </View>
 
-        <ThemedText style={{ color: "white", marginTop: 5 }}>
+        <ThemedText style={styles.timeText}>
           {status?.isLoaded
             ? `${formatTime(status.positionMillis)} / ${formatTime(status.durationMillis || 0)}`
             : "00:00 / 00:00"}
@@ -204,5 +204,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  timeText: {
+    color: "white",
+    marginTop: 5,
   },
 });

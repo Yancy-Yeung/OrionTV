@@ -19,7 +19,7 @@ const formatTime = (milliseconds: number) => {
   return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-export const SeekingBar = () => {
+export const SeekingBar = React.memo(() => {
   const { isSeeking, seekPosition, status } = usePlayerStore();
 
   if (!isSeeking || !status?.isLoaded) {
@@ -47,7 +47,9 @@ export const SeekingBar = () => {
       </View>
     </View>
   );
-};
+});
+
+SeekingBar.displayName = "SeekingBar";
 
 const styles = StyleSheet.create({
   seekingContainer: {

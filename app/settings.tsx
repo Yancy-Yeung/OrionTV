@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { View, StyleSheet, Alert, Platform } from "react-native";
 import { useTVEventHandler } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -167,7 +167,7 @@ export default function SettingsScreen() {
   useTVEventHandler(deviceType === "tv" ? handleTVEvent : () => {});
 
   // 动态样式
-  const dynamicStyles = createResponsiveStyles(deviceType, spacing, insets);
+  const dynamicStyles = useMemo(() => createResponsiveStyles(deviceType, spacing, insets), [deviceType, spacing, insets]);
 
   const renderSettingsContent = () => (
     // <KeyboardAvoidingView style={{ flex: 1, backgroundColor }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
