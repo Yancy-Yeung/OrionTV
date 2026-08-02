@@ -330,9 +330,27 @@ const useHomeStore = create<HomeState>((set, get) => ({
     });
 
     // 只有当前选中的是"最近播放"分类时才刷新数据
+    // 静默刷新：不清空 contentData、不触发 loading，避免列表卸载导致焦点丢失
     const { selectedCategory } = get();
     if (selectedCategory.type === "record") {
-      get().fetchInitialData();
+      const rowItems = Object.entries(records)
+        .map(([key, record]) => {
+          const [source, id] = key.split("+");
+          return {
+            ...record,
+            id,
+            source,
+            progress: record.play_time / record.total_time,
+            poster: record.cover,
+            sourceName: record.source_name,
+            episodeIndex: record.index,
+            totalEpisodes: record.total_episodes,
+            lastPlayed: record.save_time,
+            play_time: record.play_time,
+          };
+        })
+        .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+      set({ contentData: rowItems, hasMore: false, loading: false, loadingMore: false, error: null });
     }
   },
 

@@ -31,6 +31,7 @@ export default function HomeScreen() {
   const [tvFocusRegion, setTVFocusRegion] = useState<'sidebar' | 'content'>('sidebar');
   const [restoreCardFocus, setRestoreCardFocus] = useState(false);
   const [lastSidebarFocusKey, setLastSidebarFocusKey] = useState<string | null>(null);
+  const [restorePending, setRestorePending] = useState(false);
   const customScrollRef = useRef<CustomScrollViewRef>(null);
   const hasMountedRef = useRef(false);
   const lastDetailCardIndexRef = useRef<number>(0);
@@ -304,34 +305,39 @@ export default function HomeScreen() {
   // 从详情页返回时：保持 FlatList 挂载，只恢复焦点和滚动位置
   lastDetailCardIndexRef.current = lastDetailCardIndex;
 
+  // 数据就绪后才执行焦点恢复（避免 loading 期间 CustomScrollView 卸载导致恢复失败）
   useEffect(() => {
-    if (restoreCardFocus) {
-      const timer = setTimeout(() => {
-        setRestoreCardFocus(false);
-      }, 100);
-      return () => clearTimeout(timer);
+    if (!restorePending) return;
+    if (loading) return; // 等待数据就绪
+    if (contentData.length === 0) {
+      // 无数据可恢复焦点时直接清理挂起状态
+      setRestorePending(false);
+      return;
     }
-  }, [restoreCardFocus]);
+
+    const targetIndex = lastDetailCardIndexRef.current;
+    setRestoreCardFocus(true);
+    customScrollRef.current?.scrollToIndex({
+      index: targetIndex,
+      animated: false,
+      viewPosition: 0.5,
+    });
+
+    const timer = setTimeout(() => {
+      setRestoreCardFocus(false);
+      setRestorePending(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [restorePending, loading, contentData.length]);
 
   useFocusEffect(
     useCallback(() => {
-if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
-          const targetIndex = lastDetailCardIndexRef.current;
-          setTVFocusRegion('content');
-          setSidebarCollapsed(true);
-          setLastDetailCardIndex(targetIndex);  // 只有这里更新 state
-        setRestoreCardFocus(true);
-
-        customScrollRef.current?.scrollToIndex({
-          index: targetIndex,
-          animated: false,
-          viewPosition: 0.5,
-        });
-
-        const timer = setTimeout(() => {
-          setRestoreCardFocus(false);  // 100ms 后清除恢复标志
-        }, 100);
-        return () => clearTimeout(timer);
+      if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
+        const targetIndex = lastDetailCardIndexRef.current;
+        setTVFocusRegion('content');
+        setSidebarCollapsed(true);
+        setLastDetailCardIndex(targetIndex);
+        setRestorePending(true); // 标记待恢复，等数据就绪后执行
       } else {
         hasMountedRef.current = true;
       }
