@@ -436,7 +436,6 @@ if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
           // 只在首次进入内容区时切换焦点区域
           if (tvFocusRegion !== 'content') {
             setTVFocusRegion('content');
-            setSidebarCollapsed(true);
           }
           // 记录进入详情页前的卡片焦点位置
           lastDetailCardIndexRef.current = index;

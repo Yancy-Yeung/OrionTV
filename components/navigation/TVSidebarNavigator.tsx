@@ -59,19 +59,19 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
       </View>
       
       {/* 区域2: 焦点过渡按钮 - 高度与侧边栏相同，作为焦点从侧边栏到主内容区的必经之路 */}
-      {!collapsed && (
-        <View style={styles.toggleButton}>
-          <SidebarButton
-            focusable={true}
-            text="<"
-            onPress={() => setCollapsed(true)}
-            onFocus={handleToggleFocus}
-            variant="ghost"
-            style={styles.toggleButtonInner}
-            textStyle={styles.toggleText}
-          />
-        </View>
-      )}
+      {/* 保持可见，即使侧边栏折叠也需要它来重新展开 */}
+      <View style={styles.toggleButton}>
+        <SidebarButton
+          focusable={true}
+          text={collapsed ? ">" : "<"}
+          onPress={() => setCollapsed(!collapsed)}
+          onFocus={handleToggleFocus}
+          variant="ghost"
+          style={styles.toggleButtonInner}
+          textStyle={styles.toggleText}
+          collapsed={collapsed}
+        />
+      </View>
       
       {/* 区域3: 主内容区 */}
       <View style={styles.mainContent}>
@@ -108,18 +108,6 @@ const createStyles = (spacing: number, collapsed: boolean) =>
       marginBottom: spacing,
     },    
     toggleButton: {
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      minWidth: 42,
-    },
-    toggleText: {
-      fontSize: 18,
-      color: '#fff',
-    },
-    sidebarContent: {
-      flex: 1,
-    },
-    toggleButton: {
       width: 40,
       height: '100%',
       backgroundColor: 'rgba(0, 122, 255, 0.15)',
@@ -137,6 +125,12 @@ const createStyles = (spacing: number, collapsed: boolean) =>
       paddingVertical: spacing * 2,
     },
     toggleText: {
+      fontSize: 24,
+      color: '#fff',
+      writingMode: 'vertical-rl',
+      textOrientation: 'mixed',
+    },
+    toggleTextCollapsed: {
       fontSize: 24,
       color: '#fff',
       writingMode: 'vertical-rl',

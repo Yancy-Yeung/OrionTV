@@ -76,8 +76,10 @@ export const SidebarButton = forwardRef<View, SidebarButtonProps>(
       }),
     };
 
-    const buttonPaddingHorizontal = collapsed ? 4 : 16;
-    const buttonPaddingVertical = collapsed ? 8 : 10;
+    // 如果 collapsed prop 未传入，尝试从父组件推断
+    const isCollapsed = collapsed !== undefined ? collapsed : false;
+    const buttonPaddingHorizontal = isCollapsed ? 4 : 16;
+    const buttonPaddingVertical = isCollapsed ? 8 : 10;
 
     const styles = StyleSheet.create({
       button: {
@@ -134,6 +136,7 @@ export const SidebarButton = forwardRef<View, SidebarButtonProps>(
                 variantStyles[variant].text,
                 isSelected && (variantStyles[variant].selectedText ?? styles.selectedText),
                 textStyle,
+                isCollapsed && { fontSize: 20, fontWeight: '600' },
               ]}
             >
               {text}
