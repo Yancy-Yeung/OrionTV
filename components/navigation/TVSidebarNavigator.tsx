@@ -10,7 +10,6 @@ interface TVSidebarNavigatorProps {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   onToggleFocus?: () => void;
-  sidebarTitle?: string;
   sidebarFocusable?: boolean;
 }
 
@@ -20,7 +19,6 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
   collapsed: controlledCollapsed,
   onCollapsedChange,
   onToggleFocus,
-  sidebarTitle = '菜单',
   sidebarFocusable = true,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
@@ -48,27 +46,34 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* 侧边栏容器 - 整体控制焦点 */}
+      {/* 区域1: 侧边栏 */}
       <View
         style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}
       >
         <View style={styles.sidebarHeader}>
-          {!collapsed && <ThemedText style={styles.sidebarTitle}>{sidebarTitle}</ThemedText>}
-          <StyledButton
-            focusable={true}
-            text={collapsed ? '>' : '<'}
-            onPress={() => setCollapsed(!collapsed)}
-            onFocus={handleToggleFocus}
-            variant="ghost"
-            style={styles.toggleButton}
-            textStyle={styles.toggleText}
-          />
+          {!collapsed }
         </View>
         <View style={styles.sidebarContent}>
           {sidebarContent}
         </View>
       </View>
-      {/* 主内容区 */}
+      
+      {/* 区域2: 焦点过渡按钮 - 高度与侧边栏相同，作为焦点从侧边栏到主内容区的必经之路 */}
+      {!collapsed && (
+        <View style={styles.toggleButton}>
+          <StyledButton
+            focusable={true}
+            text="<"
+            onPress={() => setCollapsed(true)}
+            onFocus={handleToggleFocus}
+            variant="ghost"
+            style={styles.toggleButtonInner}
+            textStyle={styles.toggleText}
+          />
+        </View>
+      )}
+      
+      {/* 区域3: 主内容区 */}
       <View style={styles.mainContent}>
         {children}
       </View>
@@ -101,12 +106,7 @@ const createStyles = (spacing: number, collapsed: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: spacing,
-    },
-    sidebarTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: '#fff',
-    },
+    },    
     toggleButton: {
       paddingVertical: 6,
       paddingHorizontal: 10,
@@ -118,6 +118,29 @@ const createStyles = (spacing: number, collapsed: boolean) =>
     },
     sidebarContent: {
       flex: 1,
+    },
+    toggleButton: {
+      width: 40,
+      height: '100%',
+      backgroundColor: 'rgba(0, 122, 255, 0.15)',
+      borderLeftWidth: 1,
+      borderLeftColor: '#333',
+      borderRightWidth: 1,
+      borderRightColor: '#333',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    toggleButtonInner: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: spacing * 2,
+    },
+    toggleText: {
+      fontSize: 24,
+      color: '#fff',
+      writingMode: 'vertical-rl',
+      textOrientation: 'mixed',
     },
     mainContent: {
       flex: 1,
