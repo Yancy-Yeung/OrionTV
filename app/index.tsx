@@ -5,7 +5,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { api } from "@/services/api";
 import VideoCard from "@/components/VideoCard";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import { Search, Settings, LogOut, Heart } from "lucide-react-native";
 import { StyledButton } from "@/components/StyledButton";
 import useHomeStore, { RowItem, Category } from "@/stores/homeStore";
@@ -23,6 +23,7 @@ const LOAD_MORE_THRESHOLD = 200;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -152,12 +153,19 @@ export default function HomeScreen() {
     }, [refreshPlayRecords])
   );
 
-    // 双击返回退出逻辑（只限当前页面）
+    // 双击返回退出逻辑（只在首页 index 生效）
   const backPressTimeRef = useRef<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
     const handleBackPress = () => {
+      // 仅当当前页面是首页（index）时才处理返回逻辑，
+      // 其他页面（如 detail）直接放行给默认返回行为（返回上一页）
+      if (pathname !== "/") {
+        backPressTimeRef.current = null; // 重置计时，防止跨页面误触发退出
+        return false;
+      }
+
       const now = Date.now();
 
       // 如果在内容区，第一次按返回键返回侧边栏
@@ -183,13 +191,13 @@ export default function HomeScreen() {
     if (Platform.OS === "android") {
       const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
 
-      // 返回首页时重置状态
+      // 首页失去焦点时移除监听并重置状态
       return () => {
         backHandler.remove();
         backPressTimeRef.current = null;
       };
     }
-  }, [tvFocusRegion])
+  }, [tvFocusRegion, pathname])
 );
 
   // 统一的数据获取逻辑
