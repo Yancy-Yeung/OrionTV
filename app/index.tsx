@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
+import React, { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
@@ -26,6 +26,7 @@ export default function HomeScreen() {
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [lastDetailCardIndex, setLastDetailCardIndex] = useState<number>(0);
   const [tvFocusRegion, setTVFocusRegion] = useState<'sidebar' | 'content'>('sidebar');
   const [restoreCardFocus, setRestoreCardFocus] = useState(false);
@@ -42,6 +43,88 @@ export default function HomeScreen() {
   const responsiveConfig = useResponsiveLayout(sidebarCollapsed);
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
   const { deviceType, spacing } = responsiveConfig;
+
+  // 缓存动态样式，避免每次渲染重新创建
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingTop: deviceType === "mobile" ? insets.top : deviceType === "tablet" ? insets.top + 20 : 0,
+    },
+    headerContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: spacing * 1.5,
+      marginBottom: spacing,
+    },
+    headerTitle: {
+      fontSize: deviceType === "mobile" ? 24 : deviceType === "tablet" ? 28 : 32,
+      fontWeight: "bold",
+      paddingTop: 16,
+    },
+    rightHeaderButtons: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    iconButton: {
+      borderRadius: 30,
+      marginLeft: spacing / 2,
+    },
+    categoryContainer: {
+      paddingBottom: spacing / 2,
+    },
+    categoryListContent: {
+      paddingHorizontal: spacing,
+    },
+    categoryButton: {
+      paddingHorizontal: deviceType === "tv" ? spacing / 4 : spacing / 2,
+      paddingVertical: spacing / 2,
+      borderRadius: deviceType === "mobile" ? 6 : 8,
+      marginHorizontal: deviceType === "tv" ? spacing / 4 : spacing / 2,
+    },
+    categoryText: {
+      fontSize: deviceType === "mobile" ? 14 : 16,
+      fontWeight: "500",
+    },
+    tvSidebarList: {
+      paddingBottom: spacing,
+    },
+    tvSidebarItem: {
+      marginBottom: spacing / 2,
+      width: "100%",
+      justifyContent: "center",
+      alignItems: "flex-start",
+      paddingVertical: spacing * 0.75,
+      paddingHorizontal: spacing / 2,
+      borderRadius: 10,
+    },
+    tvSidebarItemCollapsed: {
+      alignItems: "center",
+      paddingHorizontal: 4,
+      paddingVertical: 8,
+      minWidth: 0,
+    },
+    tvSidebarItemCollapseText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#fff",
+      includeFontPadding: false,
+    },
+    tvTagGroup: {
+      marginLeft: spacing,
+      marginTop: spacing / 4,
+      marginBottom: spacing / 2,
+    },
+    tvTagButton: {
+      marginBottom: spacing / 4,
+      alignItems: "flex-start",
+      width: "100%",
+      paddingHorizontal: spacing / 2,
+    },
+    contentContainer: {
+      flex: 1,
+    },
+  }), [deviceType, spacing, insets.top]);
 
   const {
     categories,
@@ -157,13 +240,24 @@ export default function HomeScreen() {
     } else if (loading) {
       fadeAnim.setValue(0);
     }
-  }, [loading, contentData.length, fadeAnim]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, contentData.length]);
 
   const handleCategorySelect = (category: Category) => {
     setSelectedTag(null);
     // 选择分类后，继续留在侧边栏模式（可能要选标签）
     setTVFocusRegion('sidebar');
     setSidebarCollapsed(false);
+    
+    // 切换一级菜单的展开/收起状态
+    if (expandedCategory === category.title) {
+      // 如果当前分类已展开，则收起
+      setExpandedCategory(null);
+    } else {
+      // 如果当前分类未展开，则展开
+      setExpandedCategory(category.title);
+    }
+    
     selectCategory(category);
   };
 
@@ -245,7 +339,7 @@ if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
   );
 
   // 二级菜单紧跟在一级分类下面，选中时展开标签组
-  const renderTVCategoryItem = ({ item, index }: { item: Category; index: number }) => {
+  const renderTVCategoryItem = useCallback(({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
     const hasTags = item.tags && item.tags.length > 0;
     const categoryHasPreferredFocus = sidebarFocusEnabled && isSelected && (sidebarCollapsed || !hasTags || !selectedTag);
@@ -266,12 +360,13 @@ if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
             handleSidebarFocus();
           }}
           isSelected={isSelected}
+          collapsed={sidebarCollapsed}
           style={[dynamicStyles.tvSidebarItem, sidebarCollapsed && dynamicStyles.tvSidebarItemCollapsed]}
           textStyle={sidebarCollapsed ? dynamicStyles.tvSidebarItemCollapseText : dynamicStyles.categoryText}
           variant="ghost"
         />
         {/* 选中且有标签时，紧跟在分类下面显示标签组 */}
-        {isSelected && hasTags && !sidebarCollapsed && (
+        {isSelected && hasTags && !sidebarCollapsed && expandedCategory === item.title && (
           <View style={dynamicStyles.tvTagGroup}>
             {item.tags!.map((tag) => {
               const tagSelected = selectedTag === tag;
@@ -300,9 +395,9 @@ if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
         )}
       </View>
     );
-  };
+  }, [selectedCategory?.title, sidebarFocusEnabled, sidebarCollapsed, selectedTag, handleCategorySelect, handleTagSelect, getSidebarItemRef, dynamicStyles]);
 
-  const renderCategory = ({ item }: { item: Category }) => {
+  const renderCategory = useCallback(({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
     return (
       <StyledButton
@@ -315,9 +410,9 @@ if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
         textStyle={dynamicStyles.categoryText}
       />
     );
-  };
+  }, [selectedCategory?.title, deviceType, sidebarFocusEnabled, handleCategorySelect, dynamicStyles]);
 
-  const renderContentItem = ({ item, index }: { item: RowItem; index: number }) => {
+  const renderContentItem = useCallback(({ item, index }: { item: RowItem; index: number }) => {
     // 仅在需要恢复焦点时（从详情页返回）设置 hasTVPreferredFocus
     const shouldRestoreFocus = deviceType === 'tv' && contentFocusEnabled && index === lastDetailCardIndex && restoreCardFocus;
     
@@ -349,20 +444,19 @@ if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
         hasTVPreferredFocus={shouldRestoreFocus}
       />
     );
-  };
+  }, [deviceType, contentFocusEnabled, lastDetailCardIndex, restoreCardFocus, tvFocusRegion, api, fetchInitialData]);
 
-  const renderFooter = () => {
+  const renderFooter = useMemo(() => {
     if (!loadingMore) return null;
     return <ActivityIndicator style={{ marginVertical: 20 }} size="large" />;
-  };
+  }, [loadingMore]);
 
   // 检查是否需要显示API配置提示
   const shouldShowApiConfig = apiConfigStatus.needsConfiguration && selectedCategory && !selectedCategory.tags;
 
   // TV端和平板端的顶部导航
-  const renderHeader = () => {
+  const renderHeader = useCallback(() => {
     if (deviceType === "mobile") {
-      // 移动端不显示顶部导航，使用底部Tab导航
       return null;
     }
 
@@ -398,86 +492,7 @@ if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
         </View>
       </View>
     );
-  };
-
-  // 动态样式
-  const dynamicStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-      paddingTop: deviceType === "mobile" ? insets.top : deviceType === "tablet" ? insets.top + 20 : 0,
-    },
-    headerContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: spacing * 1.5,
-      marginBottom: spacing,
-    },
-    headerTitle: {
-      fontSize: deviceType === "mobile" ? 24 : deviceType === "tablet" ? 28 : 32,
-      fontWeight: "bold",
-      paddingTop: 16,
-    },
-    rightHeaderButtons: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    iconButton: {
-      borderRadius: 30,
-      marginLeft: spacing / 2,
-    },
-    categoryContainer: {
-      paddingBottom: spacing / 2,
-    },
-    categoryListContent: {
-      paddingHorizontal: spacing,
-    },
-    categoryButton: {
-      paddingHorizontal: deviceType === "tv" ? spacing / 4 : spacing / 2,
-      paddingVertical: spacing / 2,
-      borderRadius: deviceType === "mobile" ? 6 : 8,
-      marginHorizontal: deviceType === "tv" ? spacing / 4 : spacing / 2, // TV端使用更小的间距
-    },
-    categoryText: {
-      fontSize: deviceType === "mobile" ? 14 : 16,
-      fontWeight: "500",
-    },
-    tvSidebarList: {
-      paddingBottom: spacing,
-    },
-    tvSidebarItem: {
-      marginBottom: spacing / 2,
-      width: "100%",
-      justifyContent: "center",
-      alignItems: "flex-start",
-      paddingVertical: spacing * 0.75,
-      paddingHorizontal: spacing / 2,
-      borderRadius: 10,
-    },
-    tvSidebarItemCollapsed: {
-      alignItems: "center",
-      paddingHorizontal: spacing / 2,
-    },
-    tvSidebarItemCollapseText: {
-      fontSize: 18,
-      fontWeight: "600",
-      color: "#fff",
-    },
-    tvTagGroup: {
-      marginLeft: spacing,
-      marginTop: spacing / 4,
-      marginBottom: spacing / 2,
-    },
-    tvTagButton: {
-      marginBottom: spacing / 4,
-      alignItems: "flex-start",
-      width: "100%",
-      paddingHorizontal: spacing / 2,
-    },
-    contentContainer: {
-      flex: 1,
-    },
-  });
+  }, [deviceType, isLoggedIn, logout, router, dynamicStyles, colorScheme]);
 
   const tvSidebarContent = (
     <FlatList

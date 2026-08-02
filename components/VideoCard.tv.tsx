@@ -51,7 +51,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
   ) => {
     const router = useRouter();
     const [isFocused, setIsFocused] = useState(false);
-    const [fadeAnim] = useState(new Animated.Value(0));
+    const fadeAnim = useRef(new Animated.Value(0)).current;
 
     const longPressTriggered = useRef(false);
 
@@ -105,10 +105,11 @@ const VideoCard = forwardRef<View, VideoCardProps>(
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 400,
-        delay: Math.random() * 200, // 随机延迟创造交错效果
+        delay: 100,
         useNativeDriver: true,
       }).start();
-    }, [fadeAnim]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleLongPress = () => {
       // Only allow long press for items with progress (play records)

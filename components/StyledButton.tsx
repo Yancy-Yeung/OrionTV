@@ -13,10 +13,11 @@ interface StyledButtonProps extends PressableProps {
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   focusable?: boolean;
+  collapsed?: boolean;
 }
 
 export const StyledButton = forwardRef<View, StyledButtonProps>(
-  ({ children, text, variant = "default", isSelected = false, style, textStyle, focusable, ...rest }, ref) => {
+  ({ children, text, variant = "default", isSelected = false, style, textStyle, focusable, collapsed = false, ...rest }, ref) => {
     const colorScheme = "dark";
     const colors = Colors[colorScheme];
     const [isFocused, setIsFocused] = React.useState(false);
@@ -75,10 +76,11 @@ export const StyledButton = forwardRef<View, StyledButtonProps>(
       }),
     };
 
+    const buttonPaddingHorizontal = collapsed ? 4 : 16;
+    const buttonPaddingVertical = collapsed ? 8 : 10;
+
     const styles = StyleSheet.create({
       button: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
         borderRadius: 8,
         borderWidth: 2,
         borderColor: "transparent",
@@ -119,6 +121,7 @@ export const StyledButton = forwardRef<View, StyledButtonProps>(
           onBlur={focusable !== false ? () => setIsFocused(false) : undefined}
           style={({ focused }) => [
             styles.button,
+            { paddingHorizontal: buttonPaddingHorizontal, paddingVertical: buttonPaddingVertical },
             variantStyles[variant].button,
             isSelected && (variantStyles[variant].selectedButton ?? styles.selectedButton),
             focused && focusable !== false && (variantStyles[variant].focusedButton ?? styles.focusedButton),

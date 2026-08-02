@@ -89,7 +89,7 @@ const createStyles = (spacing: number, collapsed: boolean) =>
       backgroundColor: '#111',
       borderRightWidth: 1,
       borderRightColor: '#333',
-      paddingHorizontal: collapsed ? spacing / 2 : spacing,
+      paddingHorizontal: collapsed ? 4 : spacing,
       paddingTop: spacing,
       paddingBottom: spacing,
     },

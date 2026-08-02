@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dimensions, Platform } from "react-native";
 
 export type DeviceType = "mobile" | "tablet" | "tv";
@@ -35,7 +35,12 @@ const getLayoutConfig = (
   isPortrait: boolean,
   sidebarCollapsed: boolean
 ): ResponsiveConfig => {
-  const spacing = deviceType === "mobile" ? 8 : deviceType === "tablet" ? 12 : 16;
+  let spacing = 16;
+  if (deviceType === "mobile") {
+    spacing = 8;
+  } else if (deviceType === "tablet") {
+    spacing = 12;
+  }
 
   let columns: number;
   let cardWidth: number;
@@ -98,7 +103,32 @@ export const useResponsiveLayout = (sidebarCollapsed: boolean = false): Responsi
   const isPortrait = height > width;
   const deviceType = getDeviceType(width);
 
-  return getLayoutConfig(deviceType, width, height, isPortrait, sidebarCollapsed);
+  // 缓存布局配置，避免每次渲染都创建新对象
+  const layoutRef = useRef<ResponsiveConfig | null>(null);
+  const prevConfigRef = useRef<{
+    deviceType: DeviceType;
+    width: number;
+    height: number;
+    isPortrait: boolean;
+    sidebarCollapsed: boolean;
+  } | null>(null);
+
+  const currentConfig = getLayoutConfig(deviceType, width, height, isPortrait, sidebarCollapsed);
+
+  // 只有当关键参数变化时才创建新对象
+  if (
+    !layoutRef.current ||
+    prevConfigRef.current?.deviceType !== deviceType ||
+    prevConfigRef.current?.width !== width ||
+    prevConfigRef.current?.height !== height ||
+    prevConfigRef.current?.isPortrait !== isPortrait ||
+    prevConfigRef.current?.sidebarCollapsed !== sidebarCollapsed
+  ) {
+    layoutRef.current = currentConfig;
+    prevConfigRef.current = { deviceType, width, height, isPortrait, sidebarCollapsed };
+  }
+
+  return layoutRef.current;
 };
 
 // Utility hook for responsive values
@@ -130,11 +160,23 @@ export const useResponsiveStyles = () => {
     },
 
     // Typography
-    titleFontSize: config.deviceType === "mobile" ? 18 : config.deviceType === "tablet" ? 22 : 28,
-    bodyFontSize: config.deviceType === "mobile" ? 14 : config.deviceType === "tablet" ? 16 : 18,
+    titleFontSize: (() => {
+      if (config.deviceType === "mobile") return 18;
+      if (config.deviceType === "tablet") return 22;
+      return 28;
+    })(),
+    bodyFontSize: (() => {
+      if (config.deviceType === "mobile") return 14;
+      if (config.deviceType === "tablet") return 16;
+      return 18;
+    })(),
 
     // Spacing
-    sectionSpacing: config.deviceType === "mobile" ? 16 : config.deviceType === "tablet" ? 20 : 24,
+    sectionSpacing: (() => {
+      if (config.deviceType === "mobile") return 16;
+      if (config.deviceType === "tablet") return 20;
+      return 24;
+    })(),
     itemSpacing: config.spacing,
   };
 };
