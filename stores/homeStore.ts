@@ -53,8 +53,8 @@ interface CacheItem {
 }
 
 const CACHE_EXPIRE_TIME = 5 * 60 * 1000; // 5分钟过期
-const MAX_CACHE_SIZE = 10; // 最大缓存容量
-const MAX_ITEMS_PER_CACHE = 40; // 每个缓存最大条目数
+const MAX_CACHE_SIZE = 20; // 最大缓存容量
+const MAX_ITEMS_PER_CACHE = 200; // 每个缓存最大条目数（增加以避免缓存与状态不同步）
 
 const getCacheKey = (category: Category) => {
   return `${category.type || "unknown"}-${category.title}-${category.tag || ""}`;

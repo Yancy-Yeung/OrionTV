@@ -35,11 +35,14 @@ const getLayoutConfig = (
   isPortrait: boolean,
   sidebarCollapsed: boolean
 ): ResponsiveConfig => {
+  // 根据屏幕宽度自动计算间距
   let spacing = 16;
   if (deviceType === "mobile") {
-    spacing = 8;
+    spacing = Math.max(6, Math.floor(width / 60));
   } else if (deviceType === "tablet") {
-    spacing = 12;
+    spacing = Math.max(8, Math.floor(width / 80));
+  } else {
+    spacing = Math.max(12, Math.floor(width / 100));
   }
 
   let columns: number;
@@ -49,22 +52,22 @@ const getLayoutConfig = (
   switch (deviceType) {
     case "mobile":
       columns = isPortrait ? 3 : 4;
-      // 使用flex布局，卡片可以更大一些来填充空间
-      cardWidth = ((width - spacing) / columns) * 0.85; // 增大到85%
-      cardHeight = cardWidth * 1.2; // 5:6 aspect ratio (reduced from 2:3)
+      // 根据间距自动调整卡片宽度，确保卡片填满屏幕
+      cardWidth = (width - spacing * (columns + 1)) / columns;
+      cardHeight = cardWidth * 1.428; // 7:5 aspect ratio (2:3)
       break;
 
     case "tablet":
       columns = isPortrait ? 3 : 4;
-      cardWidth = ((width - spacing) / columns) * 0.85; // 增大到85%
-      cardHeight = cardWidth * 1.4; // slightly less tall ratio
+      cardWidth = (width - spacing * (columns + 1)) / columns;
+      cardHeight = cardWidth * 1.428; // 7:5 aspect ratio (2:3)
       break;
 
     case "tv":
     default: {
       const sidebarWidth = sidebarCollapsed ? 80 : 240;
-      const availableWidth = width - sidebarWidth - spacing;
-      const minCardWidth = 150;
+      const availableWidth = width - sidebarWidth - spacing * 2;
+      const minCardWidth = 120;
       const maxColumns = Math.max(1, Math.floor((availableWidth + spacing) / (minCardWidth + spacing)));
       columns = Math.min(5, maxColumns);
       cardWidth = Math.floor((availableWidth - spacing * (columns - 1)) / columns);

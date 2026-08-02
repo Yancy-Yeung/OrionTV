@@ -55,22 +55,26 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
 
   // 缓存 renderItemWrapper，避免每次 render 都创建新函数
   const renderItemWrapper = useMemo(() => {
-    const tvMode = responsiveConfig.deviceType === 'tv';
+    const isTV = responsiveConfig.deviceType === 'tv';
     return ({ item, index }: { item: any; index: number }): React.ReactElement => {
       const card = renderItem({ item, index });
+      const isLastInRow = (index + 1) % effectiveColumns === 0;
       return (
-        <View style={{ marginBottom: tvMode ? responsiveConfig.spacing : 0 }}>
+        <View style={{ 
+          marginBottom: isTV ? responsiveConfig.spacing : 0,
+          marginRight: isLastInRow ? 0 : responsiveConfig.spacing / 2,
+        }}>
           {card}
         </View>
       );
     };
-  }, [renderItem, responsiveConfig.deviceType, responsiveConfig.spacing]);
+  }, [renderItem, responsiveConfig.deviceType, responsiveConfig.spacing, effectiveColumns]);
 
   // 动态样式
   const dynamicStyles = useMemo(() => StyleSheet.create({
     listContent: {
       paddingBottom: responsiveConfig.spacing * 2,
-      paddingHorizontal: responsiveConfig.spacing / 2,
+      paddingHorizontal: responsiveConfig.deviceType === 'tv' ? 0 : responsiveConfig.spacing / 2,
     },
     columnWrapper: {
       marginBottom: 0,
@@ -95,13 +99,25 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
   }), [responsiveConfig.spacing, responsiveConfig.deviceType, showScrollToTop]);
 
   // 计算 FlatList 每个网格项的高度，用于 TV 焦点滚动对齐
+  // 注意：这里的高度必须与 renderItemWrapper 中的 marginBottom 完全匹配
   const itemHeight = useMemo(() => {
     if (responsiveConfig.deviceType === "tv") {
       // VideoCard.tv pressable height = 300, plus column wrapper spacing for row gap
       return 300 + responsiveConfig.spacing;
     }
-    return responsiveConfig.cardHeight + responsiveConfig.spacing;
+    // 非 TV 模式下 renderItemWrapper 的 marginBottom = 0，所以只使用卡片高度
+    return responsiveConfig.cardHeight;
   }, [responsiveConfig.cardHeight, responsiveConfig.deviceType, responsiveConfig.spacing]);
+
+  // 为 getItemLayout 提供精确的项高度计算
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: itemHeight,
+      offset: itemHeight * Math.floor(index / effectiveColumns),
+      index,
+    }),
+    [itemHeight, effectiveColumns]
+  );
 
   // 添加返回键处理逻辑
   useEffect(() => {
@@ -192,15 +208,10 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={responsiveConfig.deviceType !== 'tv'}
-        getItemLayout={(_, index) => ({
-          length: itemHeight,
-          offset: itemHeight * Math.floor(index / effectiveColumns),
-          index,
-        })}
         ListFooterComponent={renderFooter()}
-        initialNumToRender={responsiveConfig.deviceType === 'tv' ? 20 : 10}
-        maxToRenderPerBatch={responsiveConfig.deviceType === 'tv' ? 20 : 10}
-        windowSize={responsiveConfig.deviceType === 'tv' ? 15 : 5}
+        initialNumToRender={responsiveConfig.deviceType === 'tv' ? 16 : 8}
+        maxToRenderPerBatch={responsiveConfig.deviceType === 'tv' ? 8 : 5}
+        windowSize={responsiveConfig.deviceType === 'tv' ? 7 : 5}
         removeClippedSubviews={responsiveConfig.deviceType !== 'tv'}
         columnWrapperStyle={effectiveColumns > 1 ? dynamicStyles.columnWrapper : undefined}
       />
