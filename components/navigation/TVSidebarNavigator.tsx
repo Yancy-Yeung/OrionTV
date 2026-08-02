@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { ThemedText } from '@/components/ThemedText';
-import { StyledButton } from '@/components/StyledButton';
+import { SidebarButton } from '@/components/SidebarButton';
 
 interface TVSidebarNavigatorProps {
   children: React.ReactNode;
@@ -61,7 +61,7 @@ const TVSidebarNavigator: React.FC<TVSidebarNavigatorProps> = ({
       {/* 区域2: 焦点过渡按钮 - 高度与侧边栏相同，作为焦点从侧边栏到主内容区的必经之路 */}
       {!collapsed && (
         <View style={styles.toggleButton}>
-          <StyledButton
+          <SidebarButton
             focusable={true}
             text="<"
             onPress={() => setCollapsed(true)}
