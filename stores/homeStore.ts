@@ -75,7 +75,7 @@ interface HomeState {
   error: string | null;
   fetchInitialData: () => Promise<void>;
   loadMoreData: () => Promise<void>;
-  selectCategory: (category: Category) => void;
+  selectCategory: (category: Category | null) => void;
   refreshPlayRecords: () => Promise<void>;
   clearError: () => void;
 }
@@ -258,7 +258,16 @@ const useHomeStore = create<HomeState>((set, get) => ({
     }
   },
 
-  selectCategory: (category: Category) => {
+  selectCategory: (category: Category | null) => {
+    // Handle null/undefined by selecting the first available category
+    if (!category) {
+      const categories = get().categories;
+      if (categories.length > 0 && categories[0].type !== "record") {
+        get().selectCategory(categories[0]);
+      }
+      return;
+    }
+
     const currentCategory = get().selectedCategory;
     const cacheKey = getCacheKey(category);
 
@@ -303,8 +312,9 @@ const useHomeStore = create<HomeState>((set, get) => ({
         const recordCategoryExists = state.categories.some((c) => c.type === "record");
         if (recordCategoryExists) {
           const newCategories = state.categories.filter((c) => c.type !== "record");
-          if (state.selectedCategory.type === "record") {
-            get().selectCategory(newCategories[0] || null);
+          if (state.selectedCategory.type === "record" && newCategories.length > 0) {
+            // Defer category selection to avoid nested state updates
+            setTimeout(() => get().selectCategory(newCategories[0]), 0);
           }
           return { categories: newCategories };
         }
@@ -321,8 +331,9 @@ const useHomeStore = create<HomeState>((set, get) => ({
       }
       if (!hasRecords && recordCategoryExists) {
         const newCategories = state.categories.filter((c) => c.type !== "record");
-        if (state.selectedCategory.type === "record") {
-          get().selectCategory(newCategories[0] || null);
+        if (state.selectedCategory.type === "record" && newCategories.length > 0) {
+          // Defer category selection to avoid nested state updates
+          setTimeout(() => get().selectCategory(newCategories[0]), 0);
         }
         return { categories: newCategories };
       }
