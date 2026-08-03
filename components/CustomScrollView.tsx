@@ -105,8 +105,8 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
   // 注意：这里的高度必须与 renderItemWrapper 中的 marginBottom 完全匹配
   const itemHeight = useMemo(() => {
     if (responsiveConfig.deviceType === "tv") {
-      // VideoCard.tv pressable height = 300, plus column wrapper spacing for row gap
-      return 300 + responsiveConfig.spacing;
+      // VideoCard.tv 高度 = cardHeight + 60，加上行间距
+      return responsiveConfig.cardHeight + 60 + responsiveConfig.spacing;
     }
     // 非 TV 模式下 renderItemWrapper 的 marginBottom = 0，所以只使用卡片高度
     return responsiveConfig.cardHeight;

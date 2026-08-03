@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, forwardRef } from "react";
 import { View, Text, Image, StyleSheet, Pressable, TouchableOpacity, Alert, Animated, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
@@ -57,7 +57,10 @@ const VideoCard = forwardRef<View, VideoCardProps>(
 
     const scale = useRef(new Animated.Value(1)).current;
 
-    const deviceType = useResponsiveLayout().deviceType;
+    const { deviceType, cardWidth, cardHeight } = useResponsiveLayout();
+
+    // 响应式卡片尺寸：根据屏幕宽度自动适配，避免卡片超出屏幕
+    const styles = useMemo(() => createStyles(cardWidth, cardHeight), [cardWidth, cardHeight]);
 
     const animatedStyle = {
       transform: [{ scale }],
@@ -226,17 +229,15 @@ VideoCard.displayName = "VideoCard";
 
 export default VideoCard;
 
-const CARD_WIDTH = 160;
-const CARD_HEIGHT = 240;
-const TV_CARD_HEIGHT = CARD_HEIGHT + 60;
-
-const styles = StyleSheet.create({
+const createStyles = (CARD_WIDTH: number, CARD_HEIGHT: number) => {
+  const TV_CARD_HEIGHT = CARD_HEIGHT + 60;
+  return StyleSheet.create({
   wrapper: {
-    marginHorizontal: 8,
+    marginHorizontal: 0,
     height: TV_CARD_HEIGHT,
   },
   pressable: {
-    width: CARD_WIDTH + 20,
+    width: CARD_WIDTH,
     height: TV_CARD_HEIGHT,
     justifyContent: 'center',
     alignItems: "center",
@@ -244,8 +245,8 @@ const styles = StyleSheet.create({
   },
   card: {
     marginTop: 10,
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+    width: CARD_WIDTH - 20,
+    height: CARD_HEIGHT - 30,
     borderRadius: 8,
     backgroundColor: "#222",
     overflow: "hidden",
@@ -366,4 +367,5 @@ const styles = StyleSheet.create({
     color: Colors.dark.primary,
     fontSize: 12,
   },
-});
+  });
+};

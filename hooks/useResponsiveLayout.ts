@@ -65,7 +65,7 @@ const getLayoutConfig = (
 
     case "tv":
     default: {
-      const sidebarWidth = sidebarCollapsed ? 80 : 240;
+      const sidebarWidth = sidebarCollapsed ? 50 : 210;
       const availableWidth = width - sidebarWidth - spacing * 2;
       const minCardWidth = 120;
       const maxColumns = Math.max(1, Math.floor((availableWidth + spacing) / (minCardWidth + spacing)));

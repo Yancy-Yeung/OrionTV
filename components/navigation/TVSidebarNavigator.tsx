@@ -90,16 +90,18 @@ const createStyles = (spacing: number, collapsed: boolean) =>
       flexDirection: 'row',
     },
     sidebar: {
-      width: collapsed ? 80 : 240,
+      width: collapsed ? 50 : 210,
       backgroundColor: '#111',
       borderRightWidth: 1,
       borderRightColor: '#333',
-      paddingHorizontal: collapsed ? 4 : spacing,
+      // 左侧增加内边距，确保菜单项聚焦放大时左侧边框不超出屏幕
+      paddingLeft: collapsed ? 12 : spacing + 12,
+      paddingRight: collapsed ? 4 : spacing,
       paddingTop: spacing,
       paddingBottom: spacing,
     },
     sidebarCollapsed: {
-      width: 80,
+      width: 50,
     },
     sidebarHeader: {
       flexDirection: 'row',
