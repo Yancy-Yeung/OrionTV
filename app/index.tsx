@@ -26,7 +26,6 @@ export default function HomeScreen() {
   const pathname = usePathname();
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [lastDetailCardIndex, setLastDetailCardIndex] = useState<number>(0);
   const [tvFocusRegion, setTVFocusRegion] = useState<'sidebar' | 'content'>('sidebar');
@@ -41,8 +40,8 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
 
-  // 响应式布局配置 - 传入 sidebarCollapsed 使右侧内容区根据侧边栏状态自适应
-  const responsiveConfig = useResponsiveLayout(sidebarCollapsed);
+  // 响应式布局配置
+  const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
   const { deviceType, spacing } = responsiveConfig;
 
@@ -168,12 +167,7 @@ export default function HomeScreen() {
 
       const now = Date.now();
 
-      // 如果在内容区，第一次按返回键返回侧边栏
-      if (tvFocusRegion === 'content') {
-        setTVFocusRegion('sidebar');
-        setSidebarCollapsed(false);
-        return true; // 拦截返回事件
-      }
+
 
       // 如果在侧边栏，双击返回退出
       if (!backPressTimeRef.current || now - backPressTimeRef.current > 2000) {
@@ -256,7 +250,6 @@ export default function HomeScreen() {
     setSelectedTag(null);
     // 选择分类后，继续留在侧边栏模式（可能要选标签）
     setTVFocusRegion('sidebar');
-    setSidebarCollapsed(false);
     
     // 切换一级菜单的展开/收起状态
     if (expandedCategory === category.title) {
@@ -274,7 +267,6 @@ export default function HomeScreen() {
     setSelectedTag(tag);
     // 选择标签后，继续留在侧边栏模式
     setTVFocusRegion('sidebar');
-    setSidebarCollapsed(false);
     if (selectedCategory) {
       const categoryWithTag = { ...selectedCategory, tag: tag };
       selectCategory(categoryWithTag);
@@ -300,15 +292,14 @@ export default function HomeScreen() {
 
   const handleSidebarFocus = useCallback(() => {
     setTVFocusRegion('sidebar');
-    setSidebarCollapsed(false);
   }, []);
 
   useEffect(() => {
     if (tvFocusRegion === 'sidebar') {
-      setSidebarCollapsed(false);
       focusSelectedSidebarItem();
     }
   }, [tvFocusRegion, focusSelectedSidebarItem]);
+
 
   // 从详情页返回时：保持 FlatList 挂载，只恢复焦点和滚动位置
   lastDetailCardIndexRef.current = lastDetailCardIndex;
@@ -341,10 +332,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       if (hasMountedRef.current && lastDetailCardIndexRef.current >= 0) {
-        const targetIndex = lastDetailCardIndexRef.current;
-        setTVFocusRegion('content');
-        setSidebarCollapsed(true);
-        setLastDetailCardIndex(targetIndex);
+
         setRestorePending(true); // 标记待恢复，等数据就绪后执行
       } else {
         hasMountedRef.current = true;
@@ -356,16 +344,13 @@ export default function HomeScreen() {
   const renderTVCategoryItem = useCallback(({ item, index }: { item: Category; index: number }) => {
     const isSelected = selectedCategory?.title === item.title;
     const hasTags = item.tags && item.tags.length > 0;
-    const categoryHasPreferredFocus = sidebarFocusEnabled && isSelected && (sidebarCollapsed || !hasTags || !selectedTag);
-    const initialCategoryFocus = sidebarFocusEnabled && !selectedCategory && index === 0;
 
     return (
       <View>
         <StyledButton
           ref={getSidebarItemRef(`category-${item.title}`)}
           focusable={true}
-          hasTVPreferredFocus={!sidebarCollapsed && (categoryHasPreferredFocus || initialCategoryFocus)}
-          text={sidebarCollapsed ? item.title.charAt(0) : item.title}
+          text={item.title}
           onPress={() => handleCategorySelect(item)}
           onFocus={() => {
             const key = `category-${item.title}`;
@@ -374,13 +359,12 @@ export default function HomeScreen() {
             handleSidebarFocus();
           }}
           isSelected={isSelected}
-          collapsed={sidebarCollapsed}
-          style={[dynamicStyles.tvSidebarItem, sidebarCollapsed && dynamicStyles.tvSidebarItemCollapsed]}
-          textStyle={sidebarCollapsed ? dynamicStyles.tvSidebarItemCollapseText : dynamicStyles.categoryText}
+          style={dynamicStyles.tvSidebarItem}
+          textStyle={dynamicStyles.categoryText}
           variant="ghost"
         />
         {/* 选中且有标签时，紧跟在分类下面显示标签组 */}
-        {isSelected && hasTags && !sidebarCollapsed && expandedCategory === item.title && (
+        {isSelected && hasTags && expandedCategory === item.title && (
           <View style={dynamicStyles.tvTagGroup}>
             {item.tags!.map((tag) => {
               const tagSelected = selectedTag === tag;
@@ -409,7 +393,7 @@ export default function HomeScreen() {
         )}
       </View>
     );
-  }, [selectedCategory?.title, sidebarFocusEnabled, sidebarCollapsed, selectedTag, handleCategorySelect, handleTagSelect, getSidebarItemRef, dynamicStyles]);
+  }, [selectedCategory?.title, sidebarFocusEnabled, selectedTag, expandedCategory, handleCategorySelect, handleTagSelect, getSidebarItemRef, dynamicStyles]);
 
   const renderCategory = useCallback(({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
@@ -617,17 +601,7 @@ export default function HomeScreen() {
   if (deviceType === "tv") {
     return (
       <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
-        <TVSidebarNavigator
-          collapsed={sidebarCollapsed}
-          onCollapsedChange={setSidebarCollapsed}
-          onToggleFocus={() => {
-            if (sidebarFocusEnabled) {
-              setSidebarCollapsed(false);
-            }
-          }}
-          sidebarContent={tvSidebarContent}
-          sidebarFocusable={sidebarFocusEnabled}
-        >
+        <TVSidebarNavigator sidebarContent={tvSidebarContent}>
           {renderHeader()}
           {shouldShowApiConfig ? (
             <View style={commonStyles.center}>
@@ -659,7 +633,7 @@ export default function HomeScreen() {
               </ThemedText>
             </View>
           ) : (
-            <Animated.View style={[dynamicStyles.contentContainer, { opacity: fadeAnim }]}> 
+            <Animated.View style={[dynamicStyles.contentContainer, { opacity: fadeAnim }]}>
               <CustomScrollView
                 ref={customScrollRef}
                 data={contentData}

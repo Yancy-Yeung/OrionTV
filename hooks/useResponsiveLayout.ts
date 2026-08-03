@@ -32,8 +32,7 @@ const getLayoutConfig = (
   deviceType: DeviceType,
   width: number,
   height: number,
-  isPortrait: boolean,
-  sidebarCollapsed: boolean
+  isPortrait: boolean
 ): ResponsiveConfig => {
   // 根据屏幕宽度自动计算间距
   let spacing = 16;
@@ -65,7 +64,8 @@ const getLayoutConfig = (
 
     case "tv":
     default: {
-      const sidebarWidth = sidebarCollapsed ? 50 : 210;
+      // 侧边栏固定宽度（不再支持折叠）
+      const sidebarWidth = 210;
       const availableWidth = width - sidebarWidth - spacing * 2;
       const minCardWidth = 120;
       const maxColumns = Math.max(1, Math.floor((availableWidth + spacing) / (minCardWidth + spacing)));
@@ -88,7 +88,7 @@ const getLayoutConfig = (
   };
 };
 
-export const useResponsiveLayout = (sidebarCollapsed: boolean = false): ResponsiveConfig => {
+export const useResponsiveLayout = (): ResponsiveConfig => {
   const [dimensions, setDimensions] = useState(() => {
     const { width, height } = Dimensions.get("window");
     return { width, height };
@@ -113,10 +113,9 @@ export const useResponsiveLayout = (sidebarCollapsed: boolean = false): Responsi
     width: number;
     height: number;
     isPortrait: boolean;
-    sidebarCollapsed: boolean;
   } | null>(null);
 
-  const currentConfig = getLayoutConfig(deviceType, width, height, isPortrait, sidebarCollapsed);
+  const currentConfig = getLayoutConfig(deviceType, width, height, isPortrait);
 
   // 只有当关键参数变化时才创建新对象
   if (
@@ -124,11 +123,10 @@ export const useResponsiveLayout = (sidebarCollapsed: boolean = false): Responsi
     prevConfigRef.current?.deviceType !== deviceType ||
     prevConfigRef.current?.width !== width ||
     prevConfigRef.current?.height !== height ||
-    prevConfigRef.current?.isPortrait !== isPortrait ||
-    prevConfigRef.current?.sidebarCollapsed !== sidebarCollapsed
+    prevConfigRef.current?.isPortrait !== isPortrait
   ) {
     layoutRef.current = currentConfig;
-    prevConfigRef.current = { deviceType, width, height, isPortrait, sidebarCollapsed };
+    prevConfigRef.current = { deviceType, width, height, isPortrait };
   }
 
   return layoutRef.current;
