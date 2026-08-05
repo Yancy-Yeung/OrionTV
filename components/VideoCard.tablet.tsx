@@ -313,7 +313,10 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     },
     infoContainer: {
       width: cardWidth,
-      marginTop: 8,
+      // 固定信息区高度：与 CustomScrollView 的 getItemLayout 保持一致，
+      // 保证每行高度确定（2行标题 + 续看标签），避免追加数据后出现错位断层
+      height: 62,
+      paddingTop: 8,
       alignItems: "flex-start",
       paddingHorizontal: 4,
     },

@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // region: --- Interface Definitions ---
 export interface DoubanItem {
+  /** 豆瓣 subject 唯一 id（用于列表 key 去重，避免跨页重复条目导致 FlatList key 冲突） */
+  id?: string;
   title: string;
   poster: string;
   rate?: string;

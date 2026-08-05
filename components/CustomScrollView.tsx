@@ -101,15 +101,23 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
     },
   }), [responsiveConfig.spacing, responsiveConfig.deviceType, showScrollToTop]);
 
+  // 各设备卡片信息区的固定高度（与 VideoCard.mobile/tablet 的 infoContainer 高度保持一致）
+  const INFO_AREA_HEIGHT = { mobile: 56, tablet: 62, tv: 60 } as const;
+
   // 计算 FlatList 每个网格项的高度，用于 TV 焦点滚动对齐
   // 注意：这里的高度必须与 renderItemWrapper 中的 marginBottom 完全匹配
   const itemHeight = useMemo(() => {
     if (responsiveConfig.deviceType === "tv") {
       // VideoCard.tv 高度 = cardHeight + 60，加上行间距
-      return responsiveConfig.cardHeight + 60 + responsiveConfig.spacing;
+      return responsiveConfig.cardHeight + INFO_AREA_HEIGHT.tv + responsiveConfig.spacing;
     }
-    // 非 TV 模式下 renderItemWrapper 的 marginBottom = 0，所以只使用卡片高度
-    return responsiveConfig.cardHeight;
+    // 非 TV：卡片高度 + 固定信息区高度 + 卡片底部间距
+    // （VideoCard.mobile/tablet 的 wrapper marginBottom = spacing，renderItemWrapper 不额外加）
+    return (
+      responsiveConfig.cardHeight +
+      INFO_AREA_HEIGHT[responsiveConfig.deviceType] +
+      responsiveConfig.spacing
+    );
   }, [responsiveConfig.cardHeight, responsiveConfig.deviceType, responsiveConfig.spacing]);
 
   // 为 getItemLayout 提供精确的项高度计算
@@ -207,6 +215,13 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
         numColumns={effectiveColumns}
         keyExtractor={(item, index) => item.id || String(index)}
         getItemLayout={getItemLayout}
+        onScrollToIndexFailed={({ index, averageItemLength }) => {
+          // getItemLayout 与真实布局存在偏差时的兜底：按平均项高滚动到估算位置
+          flatListRef.current?.scrollToOffset({
+            offset: averageItemLength * index,
+            animated: false,
+          });
+        }}
         contentContainerStyle={dynamicStyles.listContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
@@ -214,10 +229,18 @@ const CustomScrollView = forwardRef<CustomScrollViewRef, CustomScrollViewProps>(
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={responsiveConfig.deviceType !== 'tv'}
         ListFooterComponent={renderFooter()}
-        initialNumToRender={responsiveConfig.deviceType === 'tv' ? 16 : 8}
-        maxToRenderPerBatch={responsiveConfig.deviceType === 'tv' ? 8 : 5}
-        windowSize={responsiveConfig.deviceType === 'tv' ? 7 : 5}
-        removeClippedSubviews={responsiveConfig.deviceType !== 'tv'}
+        // 虚拟化参数必须足够宽松：ScrollView 版本（203ba2b）全量渲染无断层，
+        // FlatList 虚拟化窗口过小（e900257 曾将 TV 的 maxToRenderPerBatch 缩到 8、
+        // windowSize 缩到 7）会导致翻页追加数据后渲染跟不上滚动，出现大片空白"断层"。
+        // 注意：contentData 无上限（缓存才限 200 条），翻页到 200 条以上后 windowSize
+        // 再大也覆盖不了全部内容，虚拟化仍会卸载窗口外的行 → 滚动经过即空白。
+        // 因此直接关闭虚拟化，行为与 203ba2b 的 ScrollView 全量渲染一致；数据量
+        // 有限（通常 <400 条），性能可接受，同时保留 FlatList 以兼容 scrollToIndex。
+        initialNumToRender={40}
+        maxToRenderPerBatch={40}
+        windowSize={21}
+        removeClippedSubviews={false}
+        disableVirtualization
         columnWrapperStyle={effectiveColumns > 1 ? dynamicStyles.columnWrapper : undefined}
       />
       {deviceType!=='tv' && (

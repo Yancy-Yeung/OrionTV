@@ -50,6 +50,10 @@ interface CacheItem {
   timestamp: number;
   type: "movie" | "tv" | "record";
   hasMore: boolean;
+  // 缓存对应的真实下一页 douban 偏移量。
+  // 不能用 data.length 代替：去重/截断后 data.length 会小于真实偏移，
+  // 导致恢复缓存后下一次请求 page_start 错位，数据断层。
+  pageStart: number;
 }
 
 const CACHE_EXPIRE_TIME = 5 * 60 * 1000; // 5分钟过期
@@ -113,7 +117,8 @@ const useHomeStore = create<HomeState>((set, get) => ({
       set({
         loading: false,
         contentData: cachedData.data,
-        pageStart: cachedData.data.length,
+        // 使用缓存记录的真实偏移，而不是 data.length（去重后长度会失真）
+        pageStart: cachedData.pageStart,
         hasMore: cachedData.hasMore,
         error: null,
       });
@@ -165,7 +170,8 @@ const useHomeStore = create<HomeState>((set, get) => ({
 
         const newItems = result.list.map((item) => ({
           ...item,
-          id: item.title,
+          // 优先使用豆瓣唯一 subject id 作为列表 key；个别来源缺失 id 时回退到标题
+          id: item.id || item.title,
           source: "douban",
         })) as RowItem[];
 
@@ -194,6 +200,7 @@ const useHomeStore = create<HomeState>((set, get) => ({
             timestamp: Date.now(),
             type: selectedCategory.type,
             hasMore: true, // 始终为 true，因为我们允许继续加载
+            pageStart: newItems.length, // 第一页后，真实偏移 = 返回条数
           });
 
           set({
@@ -202,28 +209,55 @@ const useHomeStore = create<HomeState>((set, get) => ({
             hasMore: result.list.length !== 0,
           });
         } else {
-          // 增量加载时更新缓存
+          // 增量加载时更新缓存（同样按 id 去重，避免缓存中出现重复条目）
           const existingCache = dataCache.get(cacheKey);
+          // 本次请求后的真实下一页偏移（当前偏移 + 本次返回条数）
+          const nextPageStart = get().pageStart + newItems.length;
           if (existingCache) {
-            // 只有当缓存数据少于最大限制时才更新缓存
+            // 只有当缓存数据少于最大限制时才更新缓存数据；
+            // 但 pageStart 始终要更新为真实偏移，避免恢复缓存后偏移错位
             if (existingCache.data.length < MAX_ITEMS_PER_CACHE) {
-              const updatedData = [...existingCache.data, ...newItems];
+              const existingCacheIds = new Set(existingCache.data.map((i) => i.id));
+              const uniqueNewItems = newItems.filter((i) => !existingCacheIds.has(i.id));
+              const updatedData = [...existingCache.data, ...uniqueNewItems];
               const limitedCacheData = updatedData.slice(0, MAX_ITEMS_PER_CACHE);
 
               dataCache.set(cacheKey, {
                 ...existingCache,
                 data: limitedCacheData,
                 hasMore: true, // 始终为 true，因为我们允许继续加载
+                pageStart: nextPageStart,
+              });
+            } else {
+              // 缓存已满，不再追加数据，但偏移必须同步（保持缓存与状态一致）
+              dataCache.set(cacheKey, {
+                ...existingCache,
+                pageStart: nextPageStart,
               });
             }
+          } else {
+            // 缓存不存在（例如被清理），按第一页规则重建
+            dataCache.set(cacheKey, {
+              data: newItems.slice(0, MAX_ITEMS_PER_CACHE),
+              timestamp: Date.now(),
+              type: selectedCategory.type,
+              hasMore: true,
+              pageStart: nextPageStart,
+            });
           }
 
-          // 更新状态时使用所有数据
-          set((state) => ({
-            contentData: [...state.contentData, ...newItems],
-            pageStart: state.pageStart + newItems.length,
-            hasMore: result.list.length !== 0,
-          }));
+          // 更新状态时按 id 去重追加。豆瓣 sort=recommend 偏移分页不稳定，
+          // 跨页会返回重复条目，重复的 key 会让 FlatList 渲染错乱（表现为空白断层）
+          set((state) => {
+            const existingIds = new Set(state.contentData.map((i) => i.id));
+            const uniqueNewItems = newItems.filter((i) => !existingIds.has(i.id));
+            return {
+              contentData: [...state.contentData, ...uniqueNewItems],
+              // 偏移量仍按原始返回条数推进，保证下一次请求的 page_start 正确
+              pageStart: state.pageStart + newItems.length,
+              hasMore: result.list.length !== 0,
+            };
+          });
         }
       } else if (selectedCategory.tags) {
         // It's a container category, do not load content, but clear current content
@@ -289,7 +323,8 @@ const useHomeStore = create<HomeState>((set, get) => ({
       if (cachedData && isValidCache(cachedData)) {
         set({
           contentData: cachedData.data,
-          pageStart: cachedData.data.length,
+          // 使用缓存记录的真实偏移，而不是 data.length
+          pageStart: cachedData.pageStart,
           hasMore: cachedData.hasMore,
           loading: false,
         });
