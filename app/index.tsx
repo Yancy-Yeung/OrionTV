@@ -369,61 +369,6 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // 二级菜单紧跟在一级分类下面，选中时展开标签组
-  const renderTVCategoryItem = useCallback(({ item, index }: { item: Category; index: number }) => {
-    const isSelected = selectedCategory?.title === item.title;
-    const hasTags = item.tags && item.tags.length > 0;
-
-    return (
-      <View>
-        <StyledButton
-          ref={getSidebarItemRef(`category-${item.title}`)}
-          focusable={true}
-          text={item.title}
-          onPress={() => handleCategorySelect(item)}
-          onFocus={() => {
-            const key = `category-${item.title}`;
-            setLastSidebarFocusKey(key);
-            lastSidebarFocusKeyRef.current = key;
-            handleSidebarFocus();
-          }}
-          isSelected={isSelected}
-          style={dynamicStyles.tvSidebarItem}
-          textStyle={dynamicStyles.categoryText}
-          variant="ghost"
-        />
-        {/* 选中且有标签时，紧跟在分类下面显示标签组 */}
-        {isSelected && hasTags && expandedCategories.has(item.title) && (
-          <View style={dynamicStyles.tvTagGroup}>
-            {item.tags!.map((tag) => {
-              const tagSelected = selectedTag === tag;
-              return (
-                <StyledButton
-                  key={tag}
-                  ref={getSidebarItemRef(`tag-${tag}`)}
-                  focusable={true}
-                  hasTVPreferredFocus={tagSelected && sidebarFocusEnabled}
-                  text={tag}
-                  onPress={() => handleTagSelect(tag)}
-                  onFocus={() => {
-                    const key = `tag-${tag}`;
-                    setLastSidebarFocusKey(key);
-                    lastSidebarFocusKeyRef.current = key;
-                    handleSidebarFocus();
-                  }}
-                  isSelected={tagSelected}
-                  style={dynamicStyles.tvTagButton}
-                  textStyle={dynamicStyles.categoryText}
-                  variant="ghost"
-                />
-              );
-            })}
-          </View>
-        )}
-      </View>
-    );
-  }, [selectedCategory?.title, sidebarFocusEnabled, selectedTag, expandedCategories, handleCategorySelect, handleTagSelect, getSidebarItemRef, dynamicStyles]);
-
   const renderCategory = useCallback(({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
     // 移动端/平板端使用独立的一级菜单处理逻辑
