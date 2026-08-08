@@ -616,10 +616,10 @@ export default function HomeScreen() {
             textStyle={dynamicStyles.sidebarPrimaryText}
             variant="ghost"
           />
-          {isSelected && hasTags && isExpanded && (
+          {hasTags && isExpanded && (
             <View style={dynamicStyles.tvTagGroup}>
               {cat.tags!.map((tag) => {
-                const tagSelected = selectedTag === tag;
+                const tagSelected = isSelected && selectedTag === tag;
                 return (
                   <StyledButton
                     key={tag}
