@@ -271,16 +271,23 @@ export default function HomeScreen() {
       }
       return next;
     });
-    
-    selectCategory(category);
+
+    // 如果该分类没有二级菜单（tags），则发起请求切换分类
+    // 如果有二级菜单，则只执行展开/收起逻辑，不调用 selectCategory 发起请求
+    if (!category.tags || category.tags.length === 0) {
+      selectCategory(category);
+    }
   };
 
   const handleTagSelect = (tag: string) => {
     setSelectedTag(tag);
     // 选择标签后，继续留在侧边栏模式
     setTVFocusRegion('sidebar');
-    if (selectedCategory) {
-      const categoryWithTag = { ...selectedCategory, tag: tag };
+    
+    // 查找当前标签属于哪个一级分类，并带上该分类的 type 信息
+    const currentCategory = categories.find(cat => cat.tags && cat.tags.includes(tag));
+    if (currentCategory) {
+      const categoryWithTag = { ...currentCategory, tag: tag };
       selectCategory(categoryWithTag);
     }
   };
