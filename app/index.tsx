@@ -30,7 +30,6 @@ export default function HomeScreen() {
   const [lastDetailCardIndex, setLastDetailCardIndex] = useState<number>(0);
   const [tvFocusRegion, setTVFocusRegion] = useState<'sidebar' | 'content'>('sidebar');
   const [restoreCardFocus, setRestoreCardFocus] = useState(false);
-  const [lastSidebarFocusKey, setLastSidebarFocusKey] = useState<string | null>(null);
   const [restorePending, setRestorePending] = useState(false);
   const customScrollRef = useRef<CustomScrollViewRef>(null);
   const hasMountedRef = useRef(false);
@@ -545,7 +544,6 @@ export default function HomeScreen() {
           }}
           onFocus={() => {
             const key = item.id;
-            setLastSidebarFocusKey(key);
             lastSidebarFocusKeyRef.current = key;
             handleSidebarFocus();
           }}
@@ -572,7 +570,6 @@ export default function HomeScreen() {
             onPress={() => handleCategorySelect(cat)}
             onFocus={() => {
               const key = item.id;
-              setLastSidebarFocusKey(key);
               lastSidebarFocusKeyRef.current = key;
               handleSidebarFocus();
             }}
@@ -595,7 +592,6 @@ export default function HomeScreen() {
                     onPress={() => handleTagSelect(tag)}
                     onFocus={() => {
                       const key = `tag-${tag}`;
-                      setLastSidebarFocusKey(key);
                       lastSidebarFocusKeyRef.current = key;
                       handleSidebarFocus();
                     }}
@@ -636,7 +632,6 @@ export default function HomeScreen() {
         }}
         onFocus={() => {
           const key = item.id;
-          setLastSidebarFocusKey(key);
           lastSidebarFocusKeyRef.current = key;
           handleSidebarFocus();
         }}
