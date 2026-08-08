@@ -279,6 +279,16 @@ export default function HomeScreen() {
     }
   };
 
+  // 移动端/平板端专用：一级菜单点击处理（与 TV 端展开/收起逻辑隔离）
+  // 需求不同：
+  // 1. 点击有二级菜单（tags）的一级菜单 → 切换 selectedCategory，下方显示对应的二级菜单
+  //    （由统一 useEffect 自动选中默认标签并请求数据）
+  // 2. 点击没有二级菜单的一级菜单 → 直接发起请求获取数据渲染列表
+  const handleMobileCategorySelect = (category: Category) => {
+    setSelectedTag(null);
+    selectCategory(category);
+  };
+
   const handleTagSelect = (tag: string) => {
     setSelectedTag(tag);
     // 选择标签后，继续留在侧边栏模式
@@ -416,18 +426,21 @@ export default function HomeScreen() {
 
   const renderCategory = useCallback(({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
+    // 移动端/平板端使用独立的一级菜单处理逻辑
+    // （点击一级 → 切换显示二级菜单；无二级菜单 → 直接发起请求）
+    const onPress = deviceType === 'tv' ? handleCategorySelect : handleMobileCategorySelect;
     return (
       <StyledButton
         focusable={deviceType !== 'tv' || sidebarFocusEnabled}
         text={item.title}
-        onPress={() => handleCategorySelect(item)}
+        onPress={() => onPress(item)}
         onFocus={() => setTVFocusRegion('content')}
         isSelected={isSelected}
         style={dynamicStyles.categoryButton}
         textStyle={dynamicStyles.categoryText}
       />
     );
-  }, [selectedCategory?.title, deviceType, sidebarFocusEnabled, handleCategorySelect, dynamicStyles]);
+  }, [selectedCategory?.title, deviceType, sidebarFocusEnabled, handleCategorySelect, handleMobileCategorySelect, dynamicStyles]);
 
   const renderContentItem = useCallback(({ item, index }: { item: RowItem; index: number }) => {
     // 仅在需要恢复焦点时（从详情页返回）设置 hasTVPreferredFocus
