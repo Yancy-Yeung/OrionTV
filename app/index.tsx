@@ -491,11 +491,192 @@ export default function HomeScreen() {
     );
   }, [deviceType, isLoggedIn, logout, router, dynamicStyles, colorScheme]);
 
+  // ========== 统一侧边栏数据 ==========
+  type SidebarItemType = 'tab' | 'category' | 'divider' | 'tool';
+
+  interface SidebarItem {
+    id: string;
+    type: SidebarItemType;
+    label: string;
+    icon?: React.ReactNode;
+    // 分类相关
+    category?: Category;
+    tag?: string;
+    isSelected?: boolean;
+    hasTags?: boolean;
+    expandedCategory?: string;
+  }
+
+  const sidebarItems: SidebarItem[] = useMemo(() => {
+    const items: SidebarItem[] = [
+      // 首页 tab （暂时不用）
+      // {
+      //   id: 'tab-home',
+      //   type: 'tab',
+      //   label: '首页',
+      //   isSelected: true,
+      // },
+      // 直播 tab （暂时不用）
+      // {
+      //   id: 'tab-live',
+      //   type: 'tab',
+      //   label: '直播',
+      //   isSelected: false,
+      // },
+      // 分隔线
+      { id: 'divider-1', type: 'divider', label: '' },
+      // 分类
+      ...categories.map((cat) => ({
+        id: `category-${cat.title}`,
+        type: 'category',
+        label: cat.title,
+        category: cat,
+        isSelected: selectedCategory?.title === cat.title,
+        hasTags: !!(cat.tags && cat.tags.length > 0),
+        expandedCategory: expandedCategory ?? undefined,
+      })),
+      // 分隔线
+      { id: 'divider-2', type: 'divider', label: '' },
+      // 工具项
+      { id: 'tool-favorites', type: 'tool', label: '收藏', icon: <Heart color="white" size={18} /> },
+      { id: 'tool-search', type: 'tool', label: '搜索', icon: <Search color="white" size={18} /> },
+      { id: 'tool-settings', type: 'tool', label: '设置', icon: <Settings color="white" size={18} /> },
+      ...(isLoggedIn
+        ? [{ id: 'tool-logout', type: 'tool', label: '退出', icon: <LogOut color="white" size={18} /> }]
+        : []),
+    ];
+    return items;
+  }, [categories, selectedCategory?.title, expandedCategory, isLoggedIn]);
+
+  const renderSidebarItem = useCallback(({ item }: { item: SidebarItem }) => {
+    if (item.type === 'divider') {
+      return (
+        <View style={{ height: 1, backgroundColor: '#333', marginVertical: spacing * 0.75 }} />
+      );
+    }
+
+    if (item.type === 'tab') {
+      return (
+        <StyledButton
+          ref={getSidebarItemRef(item.id)}
+          focusable={true}
+          text={item.label}
+          onPress={() => {
+            if (item.label === '直播') {
+              router.push('/live');
+            }
+            // 首页点击无操作，已在首页
+          }}
+          onFocus={() => {
+            const key = item.id;
+            setLastSidebarFocusKey(key);
+            lastSidebarFocusKeyRef.current = key;
+            handleSidebarFocus();
+          }}
+          isSelected={item.isSelected}
+          style={dynamicStyles.tvSidebarItem}
+          textStyle={dynamicStyles.categoryText}
+          variant="ghost"
+        />
+      );
+    }
+
+    if (item.type === 'category') {
+      const cat = item.category!;
+      const isSelected = item.isSelected;
+      const hasTags = item.hasTags;
+      const isExpanded = item.expandedCategory === cat.title;
+
+      return (
+        <View>
+          <StyledButton
+            ref={getSidebarItemRef(item.id)}
+            focusable={true}
+            text={item.label}
+            onPress={() => handleCategorySelect(cat)}
+            onFocus={() => {
+              const key = item.id;
+              setLastSidebarFocusKey(key);
+              lastSidebarFocusKeyRef.current = key;
+              handleSidebarFocus();
+            }}
+            isSelected={isSelected}
+            style={dynamicStyles.tvSidebarItem}
+            textStyle={dynamicStyles.categoryText}
+            variant="ghost"
+          />
+          {isSelected && hasTags && isExpanded && (
+            <View style={dynamicStyles.tvTagGroup}>
+              {cat.tags!.map((tag) => {
+                const tagSelected = selectedTag === tag;
+                return (
+                  <StyledButton
+                    key={tag}
+                    ref={getSidebarItemRef(`tag-${tag}`)}
+                    focusable={true}
+                    hasTVPreferredFocus={tagSelected && sidebarFocusEnabled}
+                    text={tag}
+                    onPress={() => handleTagSelect(tag)}
+                    onFocus={() => {
+                      const key = `tag-${tag}`;
+                      setLastSidebarFocusKey(key);
+                      lastSidebarFocusKeyRef.current = key;
+                      handleSidebarFocus();
+                    }}
+                    isSelected={tagSelected}
+                    style={dynamicStyles.tvTagButton}
+                    textStyle={dynamicStyles.categoryText}
+                    variant="ghost"
+                  />
+                );
+              })}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    // tool 类型
+    return (
+      <StyledButton
+        ref={getSidebarItemRef(item.id)}
+        focusable={true}
+        text={item.label}
+        onPress={() => {
+          switch (item.id) {
+            case 'tool-favorites':
+              router.push('/favorites');
+              break;
+            case 'tool-search':
+              router.push('/search');
+              break;
+            case 'tool-settings':
+              router.push('/settings');
+              break;
+            case 'tool-logout':
+              logout();
+              break;
+          }
+        }}
+        onFocus={() => {
+          const key = item.id;
+          setLastSidebarFocusKey(key);
+          lastSidebarFocusKeyRef.current = key;
+          handleSidebarFocus();
+        }}
+        isSelected={false}
+        style={dynamicStyles.tvSidebarItem}
+        textStyle={dynamicStyles.categoryText}
+        variant="ghost"
+      />
+    );
+  }, [router, logout, selectedCategory?.title, selectedTag, expandedCategory, sidebarFocusEnabled, getSidebarItemRef, dynamicStyles, spacing, handleCategorySelect, handleTagSelect, handleSidebarFocus]);
+
   const tvSidebarContent = (
     <FlatList
-      data={categories}
-      renderItem={renderTVCategoryItem}
-      keyExtractor={(item) => item.title}
+      data={sidebarItems}
+      renderItem={renderSidebarItem}
+      keyExtractor={(item) => item.id}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={dynamicStyles.tvSidebarList}
     />
@@ -602,7 +783,6 @@ export default function HomeScreen() {
     return (
       <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
         <TVSidebarNavigator sidebarContent={tvSidebarContent}>
-          {renderHeader()}
           {shouldShowApiConfig ? (
             <View style={commonStyles.center}>
               <ThemedText type="subtitle" style={{ padding: spacing, textAlign: "center" }}>
