@@ -87,6 +87,16 @@ export default function HomeScreen() {
       fontSize: deviceType === "mobile" ? 14 : 16,
       fontWeight: "500",
     },
+    sidebarPrimaryText: {
+      fontSize: deviceType === "mobile" ? 14 : 16,
+      fontWeight: "500",
+      color: "#FF8C00",
+    },
+    sidebarSecondaryText: {
+      fontSize: deviceType === "mobile" ? 13 : 15,
+      fontWeight: "500",
+      color: "#00CC66",
+    },
     tvSidebarList: {
       paddingBottom: spacing,
     },
@@ -575,7 +585,7 @@ export default function HomeScreen() {
           }}
           isSelected={item.isSelected}
           style={dynamicStyles.tvSidebarItem}
-          textStyle={dynamicStyles.categoryText}
+          textStyle={dynamicStyles.sidebarPrimaryText}
           variant="ghost"
         />
       );
@@ -602,7 +612,7 @@ export default function HomeScreen() {
             }}
             isSelected={isSelected}
             style={dynamicStyles.tvSidebarItem}
-            textStyle={dynamicStyles.categoryText}
+            textStyle={dynamicStyles.sidebarPrimaryText}
             variant="ghost"
           />
           {isSelected && hasTags && isExpanded && (
@@ -625,7 +635,7 @@ export default function HomeScreen() {
                     }}
                     isSelected={tagSelected}
                     style={dynamicStyles.tvTagButton}
-                    textStyle={dynamicStyles.categoryText}
+                    textStyle={dynamicStyles.sidebarSecondaryText}
                     variant="ghost"
                   />
                 );
@@ -666,7 +676,7 @@ export default function HomeScreen() {
         }}
         isSelected={false}
         style={dynamicStyles.tvSidebarItem}
-        textStyle={dynamicStyles.categoryText}
+        textStyle={dynamicStyles.sidebarPrimaryText}
         variant="ghost"
       />
     );
