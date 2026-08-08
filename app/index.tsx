@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const pathname = usePathname();
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [lastDetailCardIndex, setLastDetailCardIndex] = useState<number>(0);
   const [tvFocusRegion, setTVFocusRegion] = useState<'sidebar' | 'content'>('sidebar');
   const [restoreCardFocus, setRestoreCardFocus] = useState(false);
@@ -261,14 +261,16 @@ export default function HomeScreen() {
     // 选择分类后，继续留在侧边栏模式（可能要选标签）
     setTVFocusRegion('sidebar');
     
-    // 切换一级菜单的展开/收起状态
-    if (expandedCategory === category.title) {
-      // 如果当前分类已展开，则收起
-      setExpandedCategory(null);
-    } else {
-      // 如果当前分类未展开，则展开
-      setExpandedCategory(category.title);
-    }
+    // 独立切换当前分类的展开/收起状态
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(category.title)) {
+        next.delete(category.title);
+      } else {
+        next.add(category.title);
+      }
+      return next;
+    });
     
     selectCategory(category);
   };
@@ -374,7 +376,7 @@ export default function HomeScreen() {
           variant="ghost"
         />
         {/* 选中且有标签时，紧跟在分类下面显示标签组 */}
-        {isSelected && hasTags && expandedCategory === item.title && (
+        {isSelected && hasTags && expandedCategories.has(item.title) && (
           <View style={dynamicStyles.tvTagGroup}>
             {item.tags!.map((tag) => {
               const tagSelected = selectedTag === tag;
@@ -403,7 +405,7 @@ export default function HomeScreen() {
         )}
       </View>
     );
-  }, [selectedCategory?.title, sidebarFocusEnabled, selectedTag, expandedCategory, handleCategorySelect, handleTagSelect, getSidebarItemRef, dynamicStyles]);
+  }, [selectedCategory?.title, sidebarFocusEnabled, selectedTag, expandedCategories, handleCategorySelect, handleTagSelect, getSidebarItemRef, dynamicStyles]);
 
   const renderCategory = useCallback(({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
@@ -514,7 +516,6 @@ export default function HomeScreen() {
     tag?: string;
     isSelected?: boolean;
     hasTags?: boolean;
-    expandedCategory?: string;
   }
 
   const sidebarItems: SidebarItem[] = useMemo(() => {
@@ -543,7 +544,7 @@ export default function HomeScreen() {
         category: cat,
         isSelected: selectedCategory?.title === cat.title,
         hasTags: !!(cat.tags && cat.tags.length > 0),
-        expandedCategory: expandedCategory ?? undefined,
+        isExpanded: expandedCategories.has(cat.title),
       })),
       // 分隔线
       { id: 'divider-2', type: 'divider', label: '' },
@@ -556,7 +557,7 @@ export default function HomeScreen() {
         : []),
     ];
     return items;
-  }, [categories, selectedCategory?.title, expandedCategory, isLoggedIn]);
+  }, [categories, selectedCategory?.title, expandedCategories, isLoggedIn]);
 
   const renderSidebarItem = useCallback(({ item }: { item: SidebarItem }) => {
     if (item.type === 'divider') {
@@ -595,7 +596,7 @@ export default function HomeScreen() {
       const cat = item.category!;
       const isSelected = item.isSelected;
       const hasTags = item.hasTags;
-      const isExpanded = item.expandedCategory === cat.title;
+      const isExpanded = expandedCategories.has(cat.title);
 
       return (
         <View>
@@ -680,7 +681,7 @@ export default function HomeScreen() {
         variant="ghost"
       />
     );
-  }, [router, logout, selectedCategory?.title, selectedTag, expandedCategory, sidebarFocusEnabled, getSidebarItemRef, dynamicStyles, spacing, handleCategorySelect, handleTagSelect, handleSidebarFocus]);
+  }, [router, logout, selectedCategory?.title, selectedTag, expandedCategories, sidebarFocusEnabled, getSidebarItemRef, dynamicStyles, spacing, handleCategorySelect, handleTagSelect, handleSidebarFocus]);
 
   const tvSidebarContent = (
     <FlatList
