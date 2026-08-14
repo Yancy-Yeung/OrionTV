@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, TextInput, StyleSheet, Alert, Keyboard, TouchableOpacity } from "react-native";
+import { View, TextInput, StyleSheet, Alert, Keyboard, TouchableOpacity, ScrollView } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import VideoCard from "@/components/VideoCard";
@@ -19,6 +19,7 @@ import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
+import { SearchHistoryManager } from "@/services/storage";
 
 const logger = Logger.withTag('SearchScreen');
 
@@ -32,6 +33,9 @@ export default function SearchScreen() {
   const { showModal: showRemoteModal, lastMessage, targetPage, clearMessage } = useRemoteControlStore();
   const { remoteInputEnabled } = useSettingsStore();
   const router = useRouter();
+
+  // Search history state
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   // 响应式布局配置
   const responsiveConfig = useResponsiveLayout();
@@ -49,6 +53,17 @@ export default function SearchScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMessage, targetPage]);
 
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        setSearchHistory(await SearchHistoryManager.get());
+      } catch (err) {
+        logger.info("Failed to load search history:", err);
+      }
+    };
+    loadHistory();
+  }, []);
+
   // useEffect(() => {
   //   // Focus the text input when the screen loads
   //   const timer = setTimeout(() => {
@@ -59,6 +74,7 @@ export default function SearchScreen() {
 
   const handleSearch = async (searchText?: string) => {
     const term = typeof searchText === "string" ? searchText : keyword;
+
     if (!term.trim()) {
       Keyboard.dismiss();
       return;
@@ -67,7 +83,8 @@ export default function SearchScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.searchVideos(term);
+      await SearchHistoryManager.add(term);
+      setSearchHistory(await SearchHistoryManager.get()); // refresh local list without duplicates/order issues      const response = await api.searchVideos(term);
       if (response.results.length > 0) {
         setResults(response.results);
       } else {
@@ -80,8 +97,6 @@ export default function SearchScreen() {
       setLoading(false);
     }
   };
-
-  const onSearchPress = () => handleSearch();
 
   const handleQrPress = () => {
     if (!remoteInputEnabled) {
@@ -129,13 +144,13 @@ export default function SearchScreen() {
             placeholderTextColor="#888"
             value={keyword}
             onChangeText={setKeyword}
-            onSubmitEditing={onSearchPress}
+            onSubmitEditing={handleSearch}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
             returnKeyType="search"
           />
         </TouchableOpacity>
-        <StyledButton style={dynamicStyles.searchButton} onPress={onSearchPress}>
+        <StyledButton style={dynamicStyles.searchButton} onPress={handleSearch}>
           <Search size={deviceType === 'mobile' ? 20 : 24} color="white" />
         </StyledButton>
         {deviceType !== 'mobile' && (
@@ -143,6 +158,22 @@ export default function SearchScreen() {
             <QrCode size={deviceType === 'tv' ? 24 : 20} color="white" />
           </StyledButton>
         )}
+      </View>
+
+      <View style={dynamicStyles.historyContainer}>
+        {searchHistory.map((item, index) => (
+          <TouchableOpacity
+            key={`${item}-${index}`}
+            activeOpacity={1}
+            style={[
+              dynamicStyles.historyButton,
+              deviceType === 'tv' && { marginRight: spacing },
+            ]}
+            onPress={() => handleSearch(item)}
+          >
+            <ThemedText style={dynamicStyles.historyText}>{item}</ThemedText>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {loading ? (
@@ -232,6 +263,25 @@ const createResponsiveStyles = (deviceType: string, spacing: number) => {
     },
     errorText: {
       color: "red",
+      fontSize: isMobile ? 14 : 16,
+      textAlign: "center",
+    },
+    historyContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      paddingHorizontal: spacing,
+      marginBottom: spacing / 2,
+    },
+    historyButton: {
+      backgroundColor: "#3a3a3c",
+      paddingHorizontal: isMobile ? 10 : 14,
+      paddingVertical: isMobile ? 6 : 8,
+      borderRadius: isMobile ? 999 : 20,
+      marginRight: spacing / 2,
+      marginBottom: spacing / 2,
+    },
+    historyText: {
+      color: "white",
       fontSize: isMobile ? 14 : 16,
       textAlign: "center",
     },
