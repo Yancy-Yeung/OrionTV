@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, TextInput, StyleSheet, Alert, Keyboard, Pressable, Animated, ScrollView, type StyleProp, type ViewStyle, type TextStyle } from "react-native";
+import { View, TextInput, StyleSheet, Alert, Keyboard, Pressable, ScrollView, type StyleProp, type ViewStyle, type TextStyle } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import VideoCard from "@/components/VideoCard";
@@ -14,7 +14,6 @@ import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import CustomScrollView from "@/components/CustomScrollView";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { useButtonAnimation } from "@/hooks/useAnimation";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
@@ -34,25 +33,21 @@ interface HistoryTagButtonProps {
 }
 
 /**
- * 历史搜索标签按钮（TV 端支持遥控器焦点导航：光标高亮 + 缩放动画）
+ * 历史搜索标签按钮（TV 端支持遥控器焦点导航：光标高亮）
+ * 不用 Animated.View 包裹，避免 transform scale 动画干扰 TV 原生焦点响应
  */
-const HistoryTagButton = React.memo(function HistoryTagButton({
-  item,
-  onPress,
-  hasPreferredFocus = false,
-  onFocus,
-  style,
-  textStyle,
-}: HistoryTagButtonProps) {
-  const [isFocused, setIsFocused] = useState(false);
-  const animationStyle = useButtonAnimation(isFocused, 1.1);
+const HistoryTagButton = React.memo(
+  React.forwardRef<View, HistoryTagButtonProps>(function HistoryTagButton(
+    { item, onPress, hasPreferredFocus = false, onFocus, style, textStyle },
+    ref
+  ) {
+    const [isFocused, setIsFocused] = useState(false);
 
-  return (
-    <Animated.View style={animationStyle}>
+    return (
       <Pressable
+        ref={ref}
         focusable
         hasTVPreferredFocus={hasPreferredFocus}
-        android_ripple={{ color: "transparent" }}
         onFocus={() => {
           setIsFocused(true);
           onFocus?.();
@@ -60,7 +55,7 @@ const HistoryTagButton = React.memo(function HistoryTagButton({
         onBlur={() => setIsFocused(false)}
         onPress={onPress}
         style={[
-          style,
+          ...(Array.isArray(style) ? style : [style]),
           { borderWidth: 2, borderColor: "transparent" },
           isFocused && {
             backgroundColor: Colors.dark.link,
@@ -75,9 +70,9 @@ const HistoryTagButton = React.memo(function HistoryTagButton({
       >
         <ThemedText style={textStyle}>{item}</ThemedText>
       </Pressable>
-    </Animated.View>
-  );
-});
+    );
+  })
+);
 
 export default function SearchScreen() {
   const [keyword, setKeyword] = useState("");
@@ -97,6 +92,9 @@ export default function SearchScreen() {
   const [isInputCursorFocused, setIsInputCursorFocused] = useState(false);
   // 标记初始焦点已应用，避免历史列表更新后第一个标签再次抢占焦点
   const [initialFocusDone, setInitialFocusDone] = useState(false);
+  // TV 手动初始焦点 refs（hasTVPreferredFocus 在动态挂载场景下不可靠，需要手动 focus 兜底）
+  const firstTagRef = useRef<View>(null);
+  const searchButtonRef = useRef<View>(null);
 
   // 响应式布局配置
   const responsiveConfig = useResponsiveLayout();
@@ -127,6 +125,23 @@ export default function SearchScreen() {
     };
     loadHistory();
   }, []);
+
+  // TV 端手动设置初始焦点：
+  // hasTVPreferredFocus 在"历史异步加载后才挂载标签"的场景下不可靠（requestFocus 可能在布局完成前调用而静默失败），
+  // 而且 TextInput 是强焦点候选，可能抢走初始焦点导致方向键被文本光标占用。
+  // 这里在历史加载完成后，用 ref.focus() 把焦点明确落到第一个标签（有历史）或搜索按钮（无历史）。
+  useEffect(() => {
+    if (!isTV || !historyLoaded || initialFocusDone) return;
+    const timer = setTimeout(() => {
+      if (searchHistory.length > 0 && firstTagRef.current) {
+        firstTagRef.current.focus();
+      } else if (searchButtonRef.current) {
+        searchButtonRef.current.focus();
+      }
+      setInitialFocusDone(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isTV, historyLoaded, searchHistory.length, initialFocusDone]);
 
   // useEffect(() => {
   //   // Focus the text input when the screen loads
@@ -194,8 +209,7 @@ export default function SearchScreen() {
       <View style={dynamicStyles.searchContainer}>
         <Pressable
           focusable={isTV}
-          hasTVPreferredFocus={isTV && historyLoaded && searchHistory.length === 0 && !initialFocusDone}
-          onFocus={isTV ? () => { setInitialFocusDone(true); setIsInputCursorFocused(true); } : undefined}
+          onFocus={isTV ? () => setIsInputCursorFocused(true) : undefined}
           onBlur={isTV ? () => setIsInputCursorFocused(false) : undefined}
           style={[
             dynamicStyles.inputContainer,
@@ -209,8 +223,9 @@ export default function SearchScreen() {
           ]}
           onPress={() => {
             if (isTV) {
-              // TV 端无物理键盘：选中输入框直接打开手机扫码输入弹窗
-              handleQrPress();
+              // TV 端选中输入框：聚焦 TextInput，等待光标出现
+              // 如需输入文字，可通过右侧 QR 按钮打开手机扫码输入，或连接蓝牙键盘
+              textInputRef.current?.focus();
             } else {
               textInputRef.current?.focus();
             }
@@ -229,7 +244,7 @@ export default function SearchScreen() {
             returnKeyType="search"
           />
         </Pressable>
-        <StyledButton style={dynamicStyles.searchButton} onPress={() => handleSearch()}>
+        <StyledButton ref={searchButtonRef} style={dynamicStyles.searchButton} onPress={() => handleSearch()}>
           <Search size={deviceType === 'mobile' ? 20 : 24} color="white" />
         </StyledButton>
         {deviceType !== 'mobile' && (
@@ -243,6 +258,7 @@ export default function SearchScreen() {
         {searchHistory.map((item, index) => (
           <HistoryTagButton
             key={item}
+            ref={index === 0 ? firstTagRef : undefined}
             item={item}
             hasPreferredFocus={isTV && historyLoaded && index === 0 && !initialFocusDone}
             onFocus={isTV ? () => setInitialFocusDone(true) : undefined}
