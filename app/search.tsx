@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, TextInput, StyleSheet, Alert, Keyboard, TouchableOpacity, ScrollView } from "react-native";
+import { View, TextInput, StyleSheet, Alert, Keyboard, Pressable, Animated, ScrollView, type StyleProp, type ViewStyle, type TextStyle } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import VideoCard from "@/components/VideoCard";
@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import CustomScrollView from "@/components/CustomScrollView";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useButtonAnimation } from "@/hooks/useAnimation";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
@@ -22,6 +23,61 @@ import Logger from '@/utils/Logger';
 import { SearchHistoryManager } from "@/services/storage";
 
 const logger = Logger.withTag('SearchScreen');
+
+interface HistoryTagButtonProps {
+  item: string;
+  onPress: () => void;
+  hasPreferredFocus?: boolean;
+  onFocus?: () => void;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+}
+
+/**
+ * 历史搜索标签按钮（TV 端支持遥控器焦点导航：光标高亮 + 缩放动画）
+ */
+const HistoryTagButton = React.memo(function HistoryTagButton({
+  item,
+  onPress,
+  hasPreferredFocus = false,
+  onFocus,
+  style,
+  textStyle,
+}: HistoryTagButtonProps) {
+  const [isFocused, setIsFocused] = useState(false);
+  const animationStyle = useButtonAnimation(isFocused, 1.1);
+
+  return (
+    <Animated.View style={animationStyle}>
+      <Pressable
+        focusable
+        hasTVPreferredFocus={hasPreferredFocus}
+        android_ripple={{ color: "transparent" }}
+        onFocus={() => {
+          setIsFocused(true);
+          onFocus?.();
+        }}
+        onBlur={() => setIsFocused(false)}
+        onPress={onPress}
+        style={[
+          style,
+          { borderWidth: 2, borderColor: "transparent" },
+          isFocused && {
+            backgroundColor: Colors.dark.link,
+            borderColor: Colors.dark.background,
+            shadowColor: Colors.dark.link,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 1,
+            shadowRadius: 10,
+            elevation: 5,
+          },
+        ]}
+      >
+        <ThemedText style={textStyle}>{item}</ThemedText>
+      </Pressable>
+    </Animated.View>
+  );
+});
 
 export default function SearchScreen() {
   const [keyword, setKeyword] = useState("");
@@ -36,11 +92,17 @@ export default function SearchScreen() {
 
   // Search history state
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  // TV 遥控器光标状态：输入框焦点高亮
+  const [isInputCursorFocused, setIsInputCursorFocused] = useState(false);
+  // 标记初始焦点已应用，避免历史列表更新后第一个标签再次抢占焦点
+  const [initialFocusDone, setInitialFocusDone] = useState(false);
 
   // 响应式布局配置
   const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
   const { deviceType, spacing } = responsiveConfig;
+  const isTV = deviceType === 'tv';
 
   useEffect(() => {
     if (lastMessage && targetPage === 'search') {
@@ -59,6 +121,8 @@ export default function SearchScreen() {
         setSearchHistory(await SearchHistoryManager.get());
       } catch (err) {
         logger.info("Failed to load search history:", err);
+      } finally {
+        setHistoryLoaded(true);
       }
     };
     loadHistory();
@@ -84,7 +148,8 @@ export default function SearchScreen() {
     setError(null);
     try {
       await SearchHistoryManager.add(term);
-      setSearchHistory(await SearchHistoryManager.get()); // refresh local list without duplicates/order issues      const response = await api.searchVideos(term);
+      setSearchHistory(await SearchHistoryManager.get()); // refresh local list without duplicates/order issues
+      const response = await api.searchVideos(term);
       if (response.results.length > 0) {
         setResults(response.results);
       } else {
@@ -127,15 +192,29 @@ export default function SearchScreen() {
   const renderSearchContent = () => (
     <>
       <View style={dynamicStyles.searchContainer}>
-        <TouchableOpacity
-          activeOpacity={1}
+        <Pressable
+          focusable={isTV}
+          hasTVPreferredFocus={isTV && historyLoaded && searchHistory.length === 0 && !initialFocusDone}
+          onFocus={isTV ? () => { setInitialFocusDone(true); setIsInputCursorFocused(true); } : undefined}
+          onBlur={isTV ? () => setIsInputCursorFocused(false) : undefined}
           style={[
             dynamicStyles.inputContainer,
             {
-              borderColor: isInputFocused ? Colors.dark.primary : "transparent",
+              borderColor: isInputFocused
+                ? Colors.dark.primary
+                : isTV && isInputCursorFocused
+                  ? Colors.dark.link
+                  : "transparent",
             },
           ]}
-          onPress={() => textInputRef.current?.focus()}
+          onPress={() => {
+            if (isTV) {
+              // TV 端无物理键盘：选中输入框直接打开手机扫码输入弹窗
+              handleQrPress();
+            } else {
+              textInputRef.current?.focus();
+            }
+          }}
         >
           <TextInput
             ref={textInputRef}
@@ -144,13 +223,13 @@ export default function SearchScreen() {
             placeholderTextColor="#888"
             value={keyword}
             onChangeText={setKeyword}
-            onSubmitEditing={handleSearch}
+            onSubmitEditing={() => handleSearch()}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
             returnKeyType="search"
           />
-        </TouchableOpacity>
-        <StyledButton style={dynamicStyles.searchButton} onPress={handleSearch}>
+        </Pressable>
+        <StyledButton style={dynamicStyles.searchButton} onPress={() => handleSearch()}>
           <Search size={deviceType === 'mobile' ? 20 : 24} color="white" />
         </StyledButton>
         {deviceType !== 'mobile' && (
@@ -162,17 +241,18 @@ export default function SearchScreen() {
 
       <View style={dynamicStyles.historyContainer}>
         {searchHistory.map((item, index) => (
-          <TouchableOpacity
-            key={`${item}-${index}`}
-            activeOpacity={1}
+          <HistoryTagButton
+            key={item}
+            item={item}
+            hasPreferredFocus={isTV && historyLoaded && index === 0 && !initialFocusDone}
+            onFocus={isTV ? () => setInitialFocusDone(true) : undefined}
+            onPress={() => handleSearch(item)}
             style={[
               dynamicStyles.historyButton,
-              deviceType === 'tv' && { marginRight: spacing },
+              isTV && { marginRight: spacing },
             ]}
-            onPress={() => handleSearch(item)}
-          >
-            <ThemedText style={dynamicStyles.historyText}>{item}</ThemedText>
-          </TouchableOpacity>
+            textStyle={dynamicStyles.historyText}
+          />
         ))}
       </View>
 
