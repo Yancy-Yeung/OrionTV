@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, TextInput, StyleSheet, Alert, Keyboard, Pressable, ScrollView, type StyleProp, type ViewStyle, type TextStyle } from "react-native";
+import { View, TextInput, StyleSheet, Alert, Keyboard, Pressable, BackHandler, ScrollView, type StyleProp, type ViewStyle, type TextStyle } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import VideoCard from "@/components/VideoCard";
@@ -80,7 +80,10 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textInputRef = useRef<TextInput>(null);
+  const inputContainerRef = useRef<View>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  // TV 端文本编辑模式：TextInput 持有焦点时可输入，按返回键退出编辑回到容器选中
+  const [isEditingText, setIsEditingText] = useState(false);
   const { showModal: showRemoteModal, lastMessage, targetPage, clearMessage } = useRemoteControlStore();
   const { remoteInputEnabled } = useSettingsStore();
   const router = useRouter();
@@ -142,6 +145,18 @@ export default function SearchScreen() {
     }, 100);
     return () => clearTimeout(timer);
   }, [isTV, historyLoaded, searchHistory.length, initialFocusDone]);
+
+  // TV 端文本编辑模式：按返回键退出编辑，焦点回到输入框容器（容器保持选中态，可继续方向键导航）
+  useEffect(() => {
+    if (!isTV || !isEditingText) return;
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      textInputRef.current?.blur();
+      // 等 TextInput 失焦后再把焦点还给外层容器
+      setTimeout(() => inputContainerRef.current?.focus(), 0);
+      return true; // 拦截返回，不退出页面
+    });
+    return () => backHandler.remove();
+  }, [isTV, isEditingText]);
 
   // useEffect(() => {
   //   // Focus the text input when the screen loads
@@ -208,6 +223,7 @@ export default function SearchScreen() {
     <>
       <View style={dynamicStyles.searchContainer}>
         <Pressable
+          ref={inputContainerRef}
           focusable={isTV}
           onFocus={isTV ? () => setIsInputCursorFocused(true) : undefined}
           onBlur={isTV ? () => setIsInputCursorFocused(false) : undefined}
@@ -239,8 +255,14 @@ export default function SearchScreen() {
             value={keyword}
             onChangeText={setKeyword}
             onSubmitEditing={() => handleSearch()}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
+            onFocus={() => {
+              setIsInputFocused(true);
+              setIsEditingText(true);
+            }}
+            onBlur={() => {
+              setIsInputFocused(false);
+              setIsEditingText(false);
+            }}
             returnKeyType="search"
           />
         </Pressable>
