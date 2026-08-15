@@ -68,7 +68,7 @@ const HistoryTagButton = React.memo(
           },
         ]}
       >
-        <ThemedText style={textStyle}>{item}</ThemedText>
+        <ThemedText style={textStyle} darkColor={isFocused ? "white" : undefined} >{item}</ThemedText>
       </Pressable>
     );
   })
