@@ -177,7 +177,7 @@ export default function SettingsScreen() {
       keyboardOpeningTime={0}
       keyboardShouldPersistTaps="always"
       scrollEnabled={true}
-      style={{ flex: 1, backgroundColor }}
+      style={{ flex: 1, backgroundColor, padding: spacing }}
     >
       <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
         {deviceType === "tv" && (
@@ -245,7 +245,8 @@ const createResponsiveStyles = (deviceType: string, spacing: number, insets: any
   return StyleSheet.create({
     container: {
       flex: 1,
-      padding: spacing,
+      paddingHorizontal: spacing + 10,
+      paddingVertical: spacing,
       paddingTop: isTV ? spacing * 2 : isMobile ? insets.top + spacing : insets.top + spacing * 1.5,
     },
     header: {
