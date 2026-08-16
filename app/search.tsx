@@ -103,7 +103,7 @@ export default function SearchScreen() {
   const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
   const { deviceType, spacing } = responsiveConfig;
-  const isTV = deviceType === 'tv';
+  
 
   useEffect(() => {
     if (lastMessage && targetPage === 'search') {
@@ -134,7 +134,7 @@ export default function SearchScreen() {
   // 而且 TextInput 是强焦点候选，可能抢走初始焦点导致方向键被文本光标占用。
   // 这里在历史加载完成后，用 ref.focus() 把焦点明确落到第一个标签（有历史）或搜索按钮（无历史）。
   useEffect(() => {
-    if (!isTV || !historyLoaded || initialFocusDone) return;
+    if (!historyLoaded || initialFocusDone) return;
     const timer = setTimeout(() => {
       if (searchHistory.length > 0 && firstTagRef.current) {
         firstTagRef.current.focus();
@@ -144,11 +144,11 @@ export default function SearchScreen() {
       setInitialFocusDone(true);
     }, 100);
     return () => clearTimeout(timer);
-  }, [isTV, historyLoaded, searchHistory.length, initialFocusDone]);
+  }, [historyLoaded, searchHistory.length, initialFocusDone]);
 
   // TV 端文本编辑模式：按返回键退出编辑，焦点回到输入框容器（容器保持选中态，可继续方向键导航）
   useEffect(() => {
-    if (!isTV || !isEditingText) return;
+    if (!isEditingText) return;
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       textInputRef.current?.blur();
       // 等 TextInput 失焦后再把焦点还给外层容器
@@ -156,7 +156,7 @@ export default function SearchScreen() {
       return true; // 拦截返回，不退出页面
     });
     return () => backHandler.remove();
-  }, [isTV, isEditingText]);
+  }, [isEditingText]);
 
   // useEffect(() => {
   //   // Focus the text input when the screen loads
@@ -224,27 +224,22 @@ export default function SearchScreen() {
       <View style={dynamicStyles.searchContainer}>
         <Pressable
           ref={inputContainerRef}
-          focusable={isTV}
-          onFocus={isTV ? () => setIsInputCursorFocused(true) : undefined}
-          onBlur={isTV ? () => setIsInputCursorFocused(false) : undefined}
+          
+          onFocus={() => setIsInputCursorFocused(true) }
+          onBlur={() => setIsInputCursorFocused(false) }
           style={[
             dynamicStyles.inputContainer,
             {
               borderColor: isInputFocused
                 ? Colors.dark.primary
-                : isTV && isInputCursorFocused
+                : isInputCursorFocused
                   ? Colors.dark.link
                   : "transparent",
             },
           ]}
-          onPress={() => {
-            if (isTV) {
-              // TV 端选中输入框：聚焦 TextInput，等待光标出现
-              // 如需输入文字，可通过右侧 QR 按钮打开手机扫码输入，或连接蓝牙键盘
-              textInputRef.current?.focus();
-            } else {
-              textInputRef.current?.focus();
-            }
+          onPress={() => {            
+            // 如需输入文字，可通过右侧 QR 按钮打开手机扫码输入，或连接蓝牙键盘
+            textInputRef.current?.focus();            
           }}
         >
           <TextInput
@@ -282,12 +277,12 @@ export default function SearchScreen() {
             key={item}
             ref={index === 0 ? firstTagRef : undefined}
             item={item}
-            hasPreferredFocus={isTV && historyLoaded && index === 0 && !initialFocusDone}
-            onFocus={isTV ? () => setInitialFocusDone(true) : undefined}
+            hasPreferredFocus={historyLoaded && index === 0 && !initialFocusDone}
+            onFocus={() => setInitialFocusDone(true)}
             onPress={() => handleSearch(item)}
             style={[
               dynamicStyles.historyButton,
-              isTV && { marginRight: spacing },
+              { marginRight: spacing },
             ]}
             textStyle={dynamicStyles.historyText}
           />
