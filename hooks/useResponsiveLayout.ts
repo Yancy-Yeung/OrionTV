@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext, createElement, type ReactNode } from "react";
 import { Dimensions, Platform } from "react-native";
 
 export type DeviceType = "mobile" | "tablet" | "tv";
@@ -20,6 +20,25 @@ const BREAKPOINTS = {
   tv: { min: 1024, max: Infinity },
 };
 
+// 是否带 TV 侧边栏的上下文。
+// 只有首页（index）使用 TVSidebarNavigator 侧边栏，其余页面（搜索/收藏等）没有侧边栏。
+// 卡片宽度的 TV 计算会根据该值决定是否减去侧边栏宽度，从而让无侧边栏页面自适配全屏宽度。
+const LayoutContext = createContext<{ hasSidebar: boolean }>({ hasSidebar: true });
+
+export const LayoutSidebarProvider = ({
+  hasSidebar,
+  children,
+}: {
+  hasSidebar: boolean;
+  children: ReactNode;
+}) => {
+  return createElement(
+    LayoutContext.Provider,
+    { value: { hasSidebar } },
+    children
+  );
+};
+
 const getDeviceType = (width: number): DeviceType => {
   if (Platform.isTV) return "tv";
 
@@ -32,7 +51,8 @@ const getLayoutConfig = (
   deviceType: DeviceType,
   width: number,
   height: number,
-  isPortrait: boolean
+  isPortrait: boolean,
+  hasSidebar: boolean
 ): ResponsiveConfig => {
   // 根据屏幕宽度自动计算间距
   let spacing = 16;
@@ -64,8 +84,8 @@ const getLayoutConfig = (
 
     case "tv":
     default: {
-      // 侧边栏固定宽度（不再支持折叠）
-      const sidebarWidth = 210;
+      // 侧边栏固定宽度（仅带侧边栏的页面才扣除，如首页）
+      const sidebarWidth = hasSidebar ? 210 : 0;
       const availableWidth = width - sidebarWidth - spacing * 2;
       const minCardWidth = 120;
       const maxColumns = Math.max(1, Math.floor((availableWidth + spacing) / (minCardWidth + spacing)));
@@ -89,6 +109,8 @@ const getLayoutConfig = (
 };
 
 export const useResponsiveLayout = (): ResponsiveConfig => {
+  const { hasSidebar } = useContext(LayoutContext);
+
   const [dimensions, setDimensions] = useState(() => {
     const { width, height } = Dimensions.get("window");
     return { width, height };
@@ -113,9 +135,10 @@ export const useResponsiveLayout = (): ResponsiveConfig => {
     width: number;
     height: number;
     isPortrait: boolean;
+    hasSidebar: boolean;
   } | null>(null);
 
-  const currentConfig = getLayoutConfig(deviceType, width, height, isPortrait);
+  const currentConfig = getLayoutConfig(deviceType, width, height, isPortrait, hasSidebar);
 
   // 只有当关键参数变化时才创建新对象
   if (
@@ -123,10 +146,11 @@ export const useResponsiveLayout = (): ResponsiveConfig => {
     prevConfigRef.current?.deviceType !== deviceType ||
     prevConfigRef.current?.width !== width ||
     prevConfigRef.current?.height !== height ||
-    prevConfigRef.current?.isPortrait !== isPortrait
+    prevConfigRef.current?.isPortrait !== isPortrait ||
+    prevConfigRef.current?.hasSidebar !== hasSidebar
   ) {
     layoutRef.current = currentConfig;
-    prevConfigRef.current = { deviceType, width, height, isPortrait };
+    prevConfigRef.current = { deviceType, width, height, isPortrait, hasSidebar };
   }
 
   return layoutRef.current;

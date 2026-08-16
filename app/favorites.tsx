@@ -7,7 +7,7 @@ import { Favorite } from "@/services/storage";
 import VideoCard from "@/components/VideoCard";
 import { api } from "@/services/api";
 import CustomScrollView from "@/components/CustomScrollView";
-import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useResponsiveLayout, LayoutSidebarProvider } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
@@ -69,14 +69,16 @@ export default function FavoritesScreen() {
 
   // 根据设备类型决定是否包装在响应式导航中
   if (deviceType === 'tv') {
-    return content;
+    return <LayoutSidebarProvider hasSidebar={false}>{content}</LayoutSidebarProvider>;
   }
 
   return (
-    <ResponsiveNavigation>
-      <ResponsiveHeader title="我的收藏" showBackButton />
-      {content}
-    </ResponsiveNavigation>
+    <LayoutSidebarProvider hasSidebar={false}>
+      <ResponsiveNavigation>
+        <ResponsiveHeader title="我的收藏" showBackButton />
+        {content}
+      </ResponsiveNavigation>
+    </LayoutSidebarProvider>
   );
 }
 

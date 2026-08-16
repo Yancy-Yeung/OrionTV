@@ -13,7 +13,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import CustomScrollView from "@/components/CustomScrollView";
-import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useResponsiveLayout, LayoutSidebarProvider } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
@@ -350,14 +350,16 @@ export default function SearchScreen() {
 
   // 根据设备类型决定是否包装在响应式导航中
   if (deviceType === 'tv') {
-    return content;
+    return <LayoutSidebarProvider hasSidebar={false}>{content}</LayoutSidebarProvider>;
   }
 
   return (
-    <ResponsiveNavigation>
-      <ResponsiveHeader title="搜索" showBackButton />
-      {content}
-    </ResponsiveNavigation>
+    <LayoutSidebarProvider hasSidebar={false}>
+      <ResponsiveNavigation>
+        <ResponsiveHeader title="搜索" showBackButton />
+        {content}
+      </ResponsiveNavigation>
+    </LayoutSidebarProvider>
   );
 }
 
