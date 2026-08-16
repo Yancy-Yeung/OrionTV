@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import VideoCard from "@/components/VideoCard";
 import VideoLoadingAnimation from "@/components/VideoLoadingAnimation";
 import { api, SearchResult } from "@/services/api";
-import { Search, QrCode } from "lucide-react-native";
+import { Search, QrCode, Trash2 } from "lucide-react-native";
 import { StyledButton } from "@/components/StyledButton";
 import { useRemoteControlStore } from "@/stores/remoteControlStore";
 import { RemoteControlModal } from "@/components/RemoteControlModal";
@@ -98,6 +98,7 @@ export default function SearchScreen() {
   // TV 手动初始焦点 refs（hasTVPreferredFocus 在动态挂载场景下不可靠，需要手动 focus 兜底）
   const firstTagRef = useRef<View>(null);
   const searchButtonRef = useRef<View>(null);
+  const clearHistoryButtonRef = useRef<View>(null);
 
   // 响应式布局配置
   const responsiveConfig = useResponsiveLayout();
@@ -193,6 +194,29 @@ export default function SearchScreen() {
     }
   };
 
+  // 一键清除全部历史查询记录（需二次确认）
+  const handleClearHistory = () => {
+    Alert.alert("清除历史记录", "确定要删除全部历史查询记录吗？", [
+      { text: "取消", style: "cancel" },
+      {
+        text: "清除",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await SearchHistoryManager.clear();
+            setSearchHistory([]);
+            // TV 端：焦点从被移除的按钮上消失，手动回到搜索按钮
+            if (deviceType === 'tv') {
+              setTimeout(() => searchButtonRef.current?.focus(), 0);
+            }
+          } catch (err) {
+            logger.info("Failed to clear search history:", err);
+          }
+        },
+      },
+    ]);
+  };
+
   const handleQrPress = () => {
     if (!remoteInputEnabled) {
       Alert.alert("远程输入未启用", "请先在设置页面中启用远程输入功能", [
@@ -267,6 +291,16 @@ export default function SearchScreen() {
         {deviceType !== 'mobile' && (
           <StyledButton style={dynamicStyles.qrButton} onPress={handleQrPress}>
             <QrCode size={deviceType === 'tv' ? 24 : 20} color="white" />
+          </StyledButton>
+        )}
+        {/* 一键删除全部历史查询记录（有历史时才显示） */}
+        {searchHistory.length > 0 && (
+          <StyledButton
+            ref={clearHistoryButtonRef}
+            style={dynamicStyles.clearHistoryButton}
+            onPress={handleClearHistory}
+          >
+            <Trash2 size={deviceType === 'mobile' ? 20 : 24} color="white" />
           </StyledButton>
         )}
       </View>
@@ -373,6 +407,14 @@ const createResponsiveStyles = (deviceType: string, spacing: number) => {
       justifyContent: "center",
       alignItems: "center",
       borderRadius: isMobile ? 8 : 8,
+    },
+    clearHistoryButton: {
+      width: isMobile ? minTouchTarget : 50,
+      height: isMobile ? minTouchTarget : 50,
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: isMobile ? 8 : 8,
+      marginLeft: deviceType !== 'mobile' ? spacing / 2 : 0,
     },
     errorText: {
       color: "red",
