@@ -8,19 +8,28 @@ import { LoginCredentialsManager } from "@/services/storage";
 
 const logger = Logger.withTag('AuthStore');
 
+// Default account for silent startup login ("auto-login as guest on launch, until user clicks logout").
+// Intentionally NOT persisted to LoginCredentialsManager so it never shadows a real remembered account.
+const GUEST_CREDENTIALS = { username: "guest", password: "guest" };
+
 interface AuthState {
   isLoggedIn: boolean;
   isLoginModalVisible: boolean;
   showLoginModal: () => void;
   hideLoginModal: () => void;
-  checkLoginStatus: (apiBaseUrl?: string) => Promise<void>;
+  checkLoginStatus: (apiBaseUrl?: string, skipAutoLogin?: boolean) => Promise<void>;
   logout: () => Promise<void>;
+
+  // Internal bookkeeping flags.
+  _isCheckingLogin?: boolean;   // guards against concurrent checkLoginStatus calls
+  _manualLogout?: boolean;      // set by logout(); suppresses silent auto-login until next app launch or a new manual login
 }
 
 const useAuthStore = create<AuthState>((set) => ({
   isLoggedIn: false,
   isLoginModalVisible: false,
   _isCheckingLogin: false, // internal flag to prevent concurrent checkLoginStatus calls
+  _manualLogout: false, // set by logout(); suppresses silent auto-login until next app launch or a new manual login
   showLoginModal: () => set({ isLoginModalVisible: true }),
   hideLoginModal: () => set({ isLoginModalVisible: false }),
   checkLoginStatus: async (apiBaseUrl?: string, skipAutoLogin: boolean = false) => {
@@ -70,8 +79,11 @@ const useAuthStore = create<AuthState>((set) => ({
       const authToken = await AsyncStorage.getItem('authCookies');
       if (!authToken) {
         // skipAutoLogin=true means this is called after a manual login attempt,
-        // so we should NOT attempt silent auto-login
-        if (!skipAutoLogin) {
+        // so we should NOT attempt silent auto-login.
+        // _manualLogout=true means the user clicked logout: suppress silent
+        // auto-login (saved-credential re-login and guest fallback) until the
+        // next app launch or a new manual login.
+        if (!skipAutoLogin && !useAuthStore.getState()._manualLogout) {
           // Try to auto re-login with saved credentials
           const savedCredentials = await LoginCredentialsManager.get();
           if (savedCredentials) {
@@ -90,8 +102,21 @@ const useAuthStore = create<AuthState>((set) => ({
               set({ isLoggedIn: false, isLoginModalVisible: true });
             }
           } else {
-            // No saved credentials, show login modal
-            set({ isLoggedIn: false, isLoginModalVisible: true });
+            // No saved credentials: silently log in as the default guest account.
+            // Guest credentials are intentionally NOT persisted so they never
+            // shadow a real remembered account.
+            try {
+              const loginResult = await api.reLogin(GUEST_CREDENTIALS.username, GUEST_CREDENTIALS.password);
+              if (loginResult && loginResult.ok) {
+                set({ isLoggedIn: true, isLoginModalVisible: false });
+              } else {
+                // Guest login rejected, show login modal
+                set({ isLoggedIn: false, isLoginModalVisible: true });
+              }
+            } catch (error) {
+              logger.error("Guest auto-login failed:", error);
+              set({ isLoggedIn: false, isLoginModalVisible: true });
+            }
           }
         } else {
           set({ isLoggedIn: false, isLoginModalVisible: true });
@@ -111,6 +136,9 @@ const useAuthStore = create<AuthState>((set) => ({
     }
   },
   logout: async () => {
+    // Suppress silent auto-login immediately so a concurrent checkLoginStatus
+    // cannot re-login (saved credentials or guest) while logout is in flight.
+    set({ _manualLogout: true });
     try {
       await api.logout();
       // Clear saved credentials on manual logout

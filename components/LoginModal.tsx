@@ -96,6 +96,8 @@ const LoginModal = () => {
     setIsLoading(true);
     try {
       await api.login(isLocalStorage ? undefined : username, password);
+      // Successful manual login: re-arm silent auto-login (clears _manualLogout set by logout())
+      useAuthStore.setState({ _manualLogout: false });
       // skipAutoLogin=true: prevent silent auto-login race condition after manual login
       await checkLoginStatus(apiBaseUrl, true);
       await refreshPlayRecords();
