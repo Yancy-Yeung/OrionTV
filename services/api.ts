@@ -1,4 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Logger from "@/utils/Logger";
+import { LoginCredentialsManager } from "./storage";
+import useAuthStore from "@/stores/authStore";
+
+const logger = Logger.withTag('Api');
+
+// Default account for silent startup login ("auto-login as guest on launch, until user clicks logout").
+// Intentionally NOT persisted to LoginCredentialsManager so it never shadows a real remembered account.
+const GUEST_CREDENTIALS = { username: "guest", password: "guest" };
 
 // region: --- Interface Definitions ---
 export interface DoubanItem {
@@ -86,6 +95,9 @@ export interface ServerConfig {
 export class API {
   public baseURL: string = "https://tv.kelvin.dpdns.org"; // 默认值，实际使用时请根据需要修改
 
+  // In-flight deduplication for silent re-login: concurrent 401s share one login call.
+  private _reloginInFlight: Promise<boolean> | null = null;
+
   constructor(baseURL?: string) {
     if (baseURL) {
       this.baseURL = baseURL;
@@ -96,38 +108,97 @@ export class API {
     this.baseURL = url;
   }
 
+  private async _doFetch(url: string, options: RequestInit, timeout: number): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    try {
+      return await fetch(`${this.baseURL}${url}`, {
+        ...options,
+        signal: options.signal || controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Request timeout");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   private async _fetch(url: string, options: RequestInit = {}, timeout: number = 10000): Promise<Response> {
     if (!this.baseURL) {
       throw new Error("API_URL_NOT_SET");
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    let response = await this._doFetch(url, options, timeout);
 
-    try {
-      const response = await fetch(`${this.baseURL}${url}`, {
-        ...options,
-        signal: options.signal || controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
+    if (response.status === 401) {
+      // Session token expired: attempt a silent re-login (saved credentials,
+      // then guest fallback) and retry the request once. Login/logout
+      // endpoints are excluded to avoid a re-login loop.
+      if (url !== "/api/login" && url !== "/api/logout") {
+        const relogged = await this.trySilentReLogin();
+        if (relogged) {
+          response = await this._doFetch(url, options, timeout);
+        }
+      }
       if (response.status === 401) {
         throw new Error("UNAUTHORIZED");
       }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("Request timeout");
-      }
-      throw error;
     }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response;
+  }
+
+  /**
+   * Silent re-login: try the saved credentials first, then fall back to the
+   * guest account. Returns true if a new session was established.
+   * Skipped while _manualLogout is set so a 401 can never silently
+   * re-authenticate a user who just clicked logout.
+   */
+  async trySilentReLogin(): Promise<boolean> {
+    if (useAuthStore.getState()._manualLogout) {
+      return false;
+    }
+    if (this._reloginInFlight) {
+      return this._reloginInFlight;
+    }
+    this._reloginInFlight = (async () => {
+      try {
+        const savedCredentials = await LoginCredentialsManager.get();
+        if (savedCredentials) {
+          try {
+            const loginResult = await this.reLogin(savedCredentials.username, savedCredentials.password);
+            if (loginResult && loginResult.ok) {
+              return true;
+            }
+            // Re-login failed, clear saved credentials and fall through to guest
+            await LoginCredentialsManager.clear();
+          } catch (error) {
+            logger.error("Auto re-login failed:", error);
+            await LoginCredentialsManager.clear();
+          }
+        }
+        // No (valid) saved credentials: fall back to the guest account.
+        try {
+          const loginResult = await this.reLogin(GUEST_CREDENTIALS.username, GUEST_CREDENTIALS.password);
+          if (loginResult && loginResult.ok) {
+            return true;
+          }
+        } catch (error) {
+          logger.error("Guest auto-login failed:", error);
+        }
+        return false;
+      } finally {
+        this._reloginInFlight = null;
+      }
+    })();
+    return this._reloginInFlight;
   }
 
   async login(username?: string | undefined, password?: string): Promise<{ ok: boolean }> {

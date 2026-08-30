@@ -8,10 +8,6 @@ import { LoginCredentialsManager } from "@/services/storage";
 
 const logger = Logger.withTag('AuthStore');
 
-// Default account for silent startup login ("auto-login as guest on launch, until user clicks logout").
-// Intentionally NOT persisted to LoginCredentialsManager so it never shadows a real remembered account.
-const GUEST_CREDENTIALS = { username: "guest", password: "guest" };
-
 interface AuthState {
   isLoggedIn: boolean;
   isLoginModalVisible: boolean;
@@ -84,40 +80,9 @@ const useAuthStore = create<AuthState>((set) => ({
         // auto-login (saved-credential re-login and guest fallback) until the
         // next app launch or a new manual login.
         if (!skipAutoLogin && !useAuthStore.getState()._manualLogout) {
-          // Try to auto re-login with saved credentials
-          const savedCredentials = await LoginCredentialsManager.get();
-          if (savedCredentials) {
-            try {
-              const loginResult = await api.reLogin(savedCredentials.username, savedCredentials.password);
-              if (loginResult && loginResult.ok) {
-                set({ isLoggedIn: true, isLoginModalVisible: false });
-              } else {
-                // Re-login failed, clear saved credentials and show login modal
-                await LoginCredentialsManager.clear();
-                set({ isLoggedIn: false, isLoginModalVisible: true });
-              }
-            } catch (error) {
-              logger.error("Auto re-login failed:", error);
-              await LoginCredentialsManager.clear();
-              set({ isLoggedIn: false, isLoginModalVisible: true });
-            }
-          } else {
-            // No saved credentials: silently log in as the default guest account.
-            // Guest credentials are intentionally NOT persisted so they never
-            // shadow a real remembered account.
-            try {
-              const loginResult = await api.reLogin(GUEST_CREDENTIALS.username, GUEST_CREDENTIALS.password);
-              if (loginResult && loginResult.ok) {
-                set({ isLoggedIn: true, isLoginModalVisible: false });
-              } else {
-                // Guest login rejected, show login modal
-                set({ isLoggedIn: false, isLoginModalVisible: true });
-              }
-            } catch (error) {
-              logger.error("Guest auto-login failed:", error);
-              set({ isLoggedIn: false, isLoginModalVisible: true });
-            }
-          }
+          // Silent re-login: saved credentials first, then guest fallback.
+          const relogged = await api.trySilentReLogin();
+          set({ isLoggedIn: relogged, isLoginModalVisible: !relogged });
         } else {
           set({ isLoggedIn: false, isLoginModalVisible: true });
         }
